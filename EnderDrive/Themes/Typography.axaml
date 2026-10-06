@@ -1,0 +1,54 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Style Selector="TextBlock.display-lg">
+    <Setter Property="FontFamily" Value="{StaticResource FontHeadline}"/>
+    <Setter Property="FontSize" Value="32"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+  </Style>
+  <Style Selector="TextBlock.headline-lg">
+    <Setter Property="FontFamily" Value="{StaticResource FontHeadline}"/>
+    <Setter Property="FontSize" Value="24"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+  <Style Selector="TextBlock.headline-md">
+    <Setter Property="FontFamily" Value="{StaticResource FontHeadline}"/>
+    <Setter Property="FontSize" Value="20"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+  <Style Selector="TextBlock.title-lg">
+    <Setter Property="FontFamily" Value="{StaticResource FontBody}"/>
+    <Setter Property="FontSize" Value="16"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+  <Style Selector="TextBlock.title-sm">
+    <Setter Property="FontFamily" Value="{StaticResource FontBody}"/>
+    <Setter Property="FontSize" Value="14"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+  <Style Selector="TextBlock.body-md">
+    <Setter Property="FontFamily" Value="{StaticResource FontBody}"/>
+    <Setter Property="FontSize" Value="13"/>
+  </Style>
+  <Style Selector="TextBlock.body-sm">
+    <Setter Property="FontFamily" Value="{StaticResource FontBody}"/>
+    <Setter Property="FontSize" Value="12"/>
+  </Style>
+  <Style Selector="TextBlock.label-mono-md">
+    <Setter Property="FontFamily" Value="{StaticResource FontMono}"/>
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="FontWeight" Value="Medium"/>
+  </Style>
+  <Style Selector="TextBlock.label-mono-sm">
+    <Setter Property="FontFamily" Value="{StaticResource FontMono}"/>
+    <Setter Property="FontSize" Value="10"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+
+  <!-- Iconos Material Symbols: Text="play_arrow", Text="sync", etc. -->
+  <Style Selector="TextBlock.icon">
+    <Setter Property="FontFamily" Value="{StaticResource FontIcons}"/>
+    <Setter Property="FontSize" Value="18"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+</Styles>

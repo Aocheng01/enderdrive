@@ -2,8 +2,15 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="EnderDrive.App"
              xmlns:local="using:EnderDrive"
-             RequestedThemeVariant="Default">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+             RequestedThemeVariant="Dark">
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="/Themes/Colors.axaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
 
     <Application.DataTemplates>
         <local:ViewLocator />
@@ -11,5 +18,7 @@
 
     <Application.Styles>
         <FluentTheme />
+        <StyleInclude Source="/Themes/Typography.axaml"/>
+        <StyleInclude Source="/Themes/Controls.axaml"/>
     </Application.Styles>
 </Application>

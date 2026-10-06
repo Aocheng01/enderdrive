@@ -31,8 +31,5 @@
   <ItemGroup>
     <Folder Include="Assets\Fonts\" />
     <Folder Include="Controls\" />
-    <Folder Include="Themes\" />
-    <Folder Include="ViewModels\Pages\" />
-    <Folder Include="Views\Pages\" />
   </ItemGroup>
 </Project>

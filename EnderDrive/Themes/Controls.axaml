@@ -1,0 +1,91 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- ===== Base común de botones ===== -->
+  <Style Selector="Button">
+    <Setter Property="Height" Value="32"/>
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusLg}"/>
+    <Setter Property="FontFamily" Value="{StaticResource FontBody}"/>
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+  </Style>
+  <!-- Efecto "hundido" al pulsar -->
+  <Style Selector="Button:pressed">
+    <Setter Property="RenderTransform" Value="translate(0px, 1px)"/>
+  </Style>
+
+  <!-- ===== Primario (verde, "Jugar") ===== -->
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+    <Setter Property="Foreground" Value="{StaticResource OnPrimaryBrush}"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+    <Setter Property="Padding" Value="16,0"/>
+  </Style>
+  <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource PrimaryHoverBrush}"/>
+    <Setter Property="Foreground" Value="{StaticResource OnPrimaryBrush}"/>
+  </Style>
+  <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+    <Setter Property="Foreground" Value="{StaticResource OnPrimaryBrush}"/>
+  </Style>
+
+  <!-- ===== Secundario (gris oscuro) ===== -->
+  <Style Selector="Button.secondary">
+    <Setter Property="Background" Value="{StaticResource SurfaceHighestBrush}"/>
+    <Setter Property="Foreground" Value="{StaticResource OnSurfaceBrush}"/>
+    <Setter Property="Padding" Value="12,0"/>
+  </Style>
+  <Style Selector="Button.secondary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#39393B"/>
+    <Setter Property="Foreground" Value="{StaticResource OnSurfaceBrush}"/>
+  </Style>
+
+  <!-- ===== Aviso (ámbar, "Subir cambios") ===== -->
+  <Style Selector="Button.warning">
+    <Setter Property="Background" Value="{StaticResource SecondaryContainerBrush}"/>
+    <Setter Property="Foreground" Value="{StaticResource OnSecondaryFixedBrush}"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="Padding" Value="14,0"/>
+  </Style>
+  <Style Selector="Button.warning:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource SecondaryBrush}"/>
+    <Setter Property="Foreground" Value="{StaticResource OnSecondaryFixedBrush}"/>
+  </Style>
+
+  <!-- ===== Botón cuadrado solo-icono (⋮, refrescar…) ===== -->
+  <Style Selector="Button.icon-button">
+    <Setter Property="Width" Value="32"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+    <Setter Property="Background" Value="{StaticResource SurfaceHighBrush}"/>
+    <Setter Property="Foreground" Value="{StaticResource OnSurfaceVariantBrush}"/>
+  </Style>
+  <Style Selector="Button.icon-button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource SurfaceHighestBrush}"/>
+    <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+  </Style>
+
+  <!-- ===== Menú lateral (ListBox con clase "nav") ===== -->
+  <Style Selector="ListBox.nav">
+    <Setter Property="Background" Value="Transparent"/>
+  </Style>
+  <Style Selector="ListBox.nav ListBoxItem">
+    <Setter Property="Padding" Value="12,8"/>
+    <Setter Property="Margin" Value="0,0,0,4"/>
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusLg}"/>
+    <Setter Property="Foreground" Value="{StaticResource OnSurfaceVariantBrush}"/>
+  </Style>
+  <Style Selector="ListBox.nav ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource SurfaceHighBrush}"/>
+    <Setter Property="Foreground" Value="{StaticResource OnSurfaceBrush}"/>
+  </Style>
+  <Style Selector="ListBox.nav ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource SurfaceHighestBrush}"/>
+    <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+  </Style>
+  <Style Selector="ListBox.nav ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource SurfaceHighestBrush}"/>
+    <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+  </Style>
+</Styles>

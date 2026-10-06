@@ -1,0 +1,14 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:EnderDrive.ViewModels.Pages"
+             x:Class="EnderDrive.Views.Pages.MyWorldsView"
+             x:DataType="vm:MyWorldsViewModel">
+
+    <Border Background="{StaticResource SurfaceLowBrush}"
+            CornerRadius="{StaticResource RadiusXl}"
+            Padding="12" VerticalAlignment="Top">
+        <TextBlock Classes="headline-md"
+                   Foreground="{StaticResource OnSurfaceBrush}"
+                   Text="{Binding Title}"/>
+    </Border>
+</UserControl>

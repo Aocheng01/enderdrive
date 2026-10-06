@@ -1,0 +1,44 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Colores base (para degradados/sombras) -->
+  <Color x:Key="PrimaryColor">#4EDEA3</Color>
+  <Color x:Key="SurfaceColor">#201F21</Color>
+  <Color x:Key="SurfaceHighColor">#2A2A2C</Color>
+
+  <!-- Marca -->
+  <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}"/>
+  <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#6FFBBE"/>
+  <SolidColorBrush x:Key="OnPrimaryBrush" Color="#003824"/>
+  <SolidColorBrush x:Key="PrimaryContainerBrush" Color="#10B981"/>
+  <SolidColorBrush x:Key="OnPrimaryContainerBrush" Color="#00422B"/>
+  <SolidColorBrush x:Key="SecondaryBrush" Color="#FFB95F"/>
+  <SolidColorBrush x:Key="SecondaryContainerBrush" Color="#EE9800"/>
+  <SolidColorBrush x:Key="OnSecondaryFixedBrush" Color="#2A1700"/>
+  <SolidColorBrush x:Key="TertiaryBrush" Color="#FFB3AD"/>
+
+  <!-- Superficies (de más oscura a más clara) -->
+  <SolidColorBrush x:Key="BackgroundBrush" Color="#131315"/>
+  <SolidColorBrush x:Key="SurfaceLowestBrush" Color="#0E0E10"/>
+  <SolidColorBrush x:Key="SurfaceLowBrush" Color="#1B1B1D"/>
+  <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}"/>
+  <SolidColorBrush x:Key="SurfaceHighBrush" Color="{StaticResource SurfaceHighColor}"/>
+  <SolidColorBrush x:Key="SurfaceHighestBrush" Color="#353437"/>
+
+  <!-- Texto y bordes -->
+  <SolidColorBrush x:Key="OnSurfaceBrush" Color="#E5E1E4"/>
+  <SolidColorBrush x:Key="OnSurfaceVariantBrush" Color="#BBCABF"/>
+  <SolidColorBrush x:Key="OutlineBrush" Color="#86948A"/>
+  <SolidColorBrush x:Key="OutlineVariantBrush" Color="#3C4A42"/>
+  <SolidColorBrush x:Key="ErrorContainerBrush" Color="#93000A"/>
+
+  <!-- Radios del prototipo: lg = 4px, xl = 8px -->
+  <CornerRadius x:Key="RadiusLg">4</CornerRadius>
+  <CornerRadius x:Key="RadiusXl">8</CornerRadius>
+
+  <!-- Familias tipográficas -->
+  <FontFamily x:Key="FontBody">avares://EnderDrive/Assets/Fonts#Plus Jakarta Sans</FontFamily>
+  <FontFamily x:Key="FontHeadline">avares://EnderDrive/Assets/Fonts#Space Grotesk</FontFamily>
+  <FontFamily x:Key="FontMono">avares://EnderDrive/Assets/Fonts#JetBrains Mono</FontFamily>
+  <FontFamily x:Key="FontIcons">avares://EnderDrive/Assets/Fonts#Material Symbols Outlined</FontFamily>
+</ResourceDictionary>
