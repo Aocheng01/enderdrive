@@ -60,7 +60,7 @@
                         <!-- Fila titulo a la izquierda, valor a la derecha -->
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Classes="label-mono-sm" 
-                                       Foreground="{StaticResource OnSurfacVariantBrush}"
+                                       Foreground="{StaticResource OnSurfaceVariantBrush}"
                                        Text= "Capacidad Drive"/>
                             <TextBlock Grid.Column="1" Classes="label-mono-sm" 
                                        Foreground="{StaticResource PrimaryBrush}" 
@@ -79,10 +79,29 @@
                     </StackPanel>
                 </Border>
 
-                <TextBlock Text="Arriba(Rellena el resto)"/>
+                <StackPanel Spacing="12">
+                    <TextBlock Classes="label-mono-sm" Margin="8,4"
+                                Foreground="{StaticResource OutlineBrush}"
+                                 Text="ALMACÉN DE BLOQUES"/>
+                    <ListBox Classes="nav"
+                             ItemsSource="{Binding NavItems}"
+                             SelectedItem="{Binding SelectedNavItem}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:NavItem">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Classes="icon" Text="{Binding Icon}"/>
+                                    <TextBlock Classes="title-sm" VerticalAlignment="Center"
+                                               Text="{Binding Label}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    
+                </StackPanel>
             </DockPanel>
         </Border>
-        <!-- ===== Contenido principal ===== -->
-        <Border Grid.Row="1" Grid.Column="1" Background="Green"/>
+        <!-- ===== CONTENIDO (página actual) ===== -->
+        <ContentControl Grid.Row="1" Grid.Column="1" Margin="20"
+                        Content="{Binding CurrentPage}"/>
     </Grid>
 </Window>
