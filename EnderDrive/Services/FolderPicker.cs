@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
+using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
 
 
@@ -11,7 +9,7 @@ namespace EnderDrive.Services
         public async Task<string?> PickFolderAsync(string title)
         {
             // El diálogo necesita una ventana "dueña": usamos la ventana principal
-            if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime { MainWindow: { } window })
+            if (MainWindowLocator.Get() is not { } window)
                 return null;
 
             var folders = await window.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions

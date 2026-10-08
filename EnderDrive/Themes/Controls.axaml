@@ -66,6 +66,40 @@
     <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
   </Style>
 
+  <!-- ===== Tarjeta de mundo ===== -->
+  <Style Selector="Border.world-card">
+    <Setter Property="Background" Value="{StaticResource SurfaceLowBrush}"/>
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusXl}"/>
+    <Setter Property="Padding" Value="12"/>
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.12"/>
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.world-card:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+  </Style>
+
+  <!-- ===== Etiqueta pequeña (versión, modo de juego…) ===== -->
+  <Style Selector="Border.chip">
+    <Setter Property="Background" Value="{StaticResource SurfaceHighBrush}"/>
+    <Setter Property="CornerRadius" Value="2"/>
+    <Setter Property="Padding" Value="6,1"/>
+  </Style>
+  <Style Selector="Border.chip > TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource FontMono}"/>
+    <Setter Property="FontSize" Value="10"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="Foreground" Value="{StaticResource OnSurfaceVariantBrush}"/>
+  </Style>
+  <Style Selector="Border.chip.danger">
+    <Setter Property="Background" Value="{StaticResource ErrorContainerBrush}"/>
+  </Style>
+  <Style Selector="Border.chip.danger > TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource TertiaryBrush}"/>
+  </Style>
+
   <!-- ===== Menú lateral (ListBox con clase "nav") ===== -->
   <Style Selector="ListBox.nav">
     <Setter Property="Background" Value="Transparent"/>

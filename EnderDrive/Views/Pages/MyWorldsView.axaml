@@ -37,13 +37,21 @@
         <Border DockPanel.Dock="Top" Margin="0,0,0,16" Padding="12,8"
                 Background="{StaticResource SurfaceLowestBrush}"
                 CornerRadius="{StaticResource RadiusLg}">
-            <Grid ColumnDefinitions="Auto,*">
+            <Grid ColumnDefinitions="Auto,*,Auto">
                 <TextBlock Classes="icon" FontSize="16"
                            Foreground="{StaticResource OutlineBrush}" Text="folder"/>
                 <TextBlock Grid.Column="1" Margin="8,0,0,0" Classes="label-mono-md"
                            VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                            Foreground="{StaticResource OnSurfaceVariantBrush}"
                            Text="{Binding SavesPath}"/>
+
+                <!-- Solo aparece si se eligió una carpeta distinta de la de por defecto -->
+                <Button Grid.Column="2" Classes="icon-button" Height="24" Width="24"
+                        Margin="8,0,0,0" IsVisible="{Binding IsCustomPath}"
+                        Command="{Binding ResetFolderCommand}"
+                        ToolTip.Tip="Volver a la carpeta por defecto">
+                    <TextBlock Classes="icon" FontSize="16" Text="restart_alt"/>
+                </Button>
             </Grid>
         </Border>
 
@@ -77,12 +85,10 @@
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
 
-                                        <ItemsControl.ItemTemplate>
+                    <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="items:WorldItemViewModel">
-                            <Border Width="260" Margin="0,0,12,12" Padding="12"
-                                    Background="{StaticResource SurfaceLowBrush}"
-                                    CornerRadius="{StaticResource RadiusXl}">
-                                <Grid ColumnDefinitions="Auto,*">
+                            <Border Classes="world-card" Width="300" Margin="0,0,12,12">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
 
                                     <!-- Icono del mundo -->
                                     <Border Width="56" Height="56" ClipToBounds="True"
@@ -104,7 +110,25 @@
                                                 VerticalAlignment="Center">
                                         <TextBlock Classes="title-sm" TextTrimming="CharacterEllipsis"
                                                    Foreground="{StaticResource OnSurfaceBrush}"
+                                                   ToolTip.Tip="{Binding FolderName}"
                                                    Text="{Binding Name}"/>
+
+                                        <!-- Etiquetas: cada una se oculta si no hay dato -->
+                                        <WrapPanel>
+                                            <Border Classes="chip" Margin="0,0,4,2"
+                                                    IsVisible="{Binding VersionText, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                                <TextBlock Text="{Binding VersionText}"/>
+                                            </Border>
+                                            <Border Classes="chip" Margin="0,0,4,2"
+                                                    IsVisible="{Binding GameModeText, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                                <TextBlock Text="{Binding GameModeText}"/>
+                                            </Border>
+                                            <Border Classes="chip danger" Margin="0,0,4,2"
+                                                    IsVisible="{Binding IsHardcore}">
+                                                <TextBlock Text="Hardcore"/>
+                                            </Border>
+                                        </WrapPanel>
+
                                         <TextBlock Classes="label-mono-sm"
                                                    Foreground="{StaticResource OnSurfaceVariantBrush}"
                                                    Text="{Binding LastPlayedText}"/>
@@ -112,6 +136,15 @@
                                                    Foreground="{StaticResource PrimaryBrush}"
                                                    Text="{Binding SizeText}"/>
                                     </StackPanel>
+
+                                    <!-- Acciones. El comando vive en MyWorldsViewModel, no en el mundo:
+                                         subimos al ItemsControl para llegar a su DataContext -->
+                                    <Button Grid.Column="2" Classes="icon-button" VerticalAlignment="Top"
+                                            Margin="8,0,0,0" ToolTip.Tip="Abrir carpeta"
+                                            Command="{Binding $parent[ItemsControl].((vm:MyWorldsViewModel)DataContext).OpenFolderCommand}"
+                                            CommandParameter="{Binding}">
+                                        <TextBlock Classes="icon" Text="folder_open"/>
+                                    </Button>
                                 </Grid>
                             </Border>
                         </DataTemplate>

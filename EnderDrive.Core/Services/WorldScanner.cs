@@ -28,13 +28,21 @@ public sealed class WorldScanner : IWorldScanner
                 continue;
 
             var icon = Path.Combine(folder, "icon.png");
+            var folderName = Path.GetFileName(folder);
+
+            // Si level.dat no se puede leer, usamos el nombre de la carpeta y la fecha del archivo
+            var level = LevelDatReader.TryRead(levelDat);
 
             worlds.Add(new WorldInfo(
-                Name: Path.GetFileName(folder),
+                Name: level?.LevelName ?? folderName,
+                FolderName: folderName,
                 FolderPath: folder,
-                LastPlayed: File.GetLastWriteTime(levelDat),
+                LastPlayed: level?.LastPlayed ?? File.GetLastWriteTime(levelDat),
                 SizeBytes: GetFolderSize(folder),
-                IconPath: File.Exists(icon) ? icon : null));
+                IconPath: File.Exists(icon) ? icon : null,
+                GameVersion: level?.GameVersion,
+                GameMode: level?.GameMode,
+                IsHardcore: level?.IsHardcore ?? false));
         }
 
         return worlds.OrderByDescending(w => w.LastPlayed).ToList();

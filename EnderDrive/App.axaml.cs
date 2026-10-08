@@ -41,7 +41,11 @@ public partial class App : Application
 
         // Servicios del Core
         services.AddSingleton<IWorldScanner, WorldScanner>();
+        services.AddSingleton<ISettingsService, JsonSettingsService>();
+
+        // Servicios de la app (necesitan la ventana de Avalonia)
         services.AddSingleton<IFolderPicker, FolderPicker>();
+        services.AddSingleton<IFolderLauncher, FolderLauncher>();
 
         // ViewModels
         services.AddSingleton<MainViewModel>();

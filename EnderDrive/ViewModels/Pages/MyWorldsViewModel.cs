@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -12,12 +13,15 @@ public partial class MyWorldsViewModel : ViewModelBase
 {
     private readonly IWorldScanner _scanner;
     private readonly IFolderPicker _folderPicker;
+    private readonly IFolderLauncher _folderLauncher;
+    private readonly ISettingsService _settings;
 
     public string Title => "Mis Mundos Locales";
 
     public ObservableCollection<WorldItemViewModel> Worlds { get; } = [];
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCustomPath))]
     public partial string SavesPath { get; set; }
 
     [ObservableProperty]
@@ -29,12 +33,22 @@ public partial class MyWorldsViewModel : ViewModelBase
 
     public bool IsEmpty => !IsLoading && Worlds.Count == 0;
 
-    public MyWorldsViewModel(IWorldScanner scanner, IFolderPicker folderPicker)
+    /// <summary>true si el usuario eligió una carpeta distinta de la de por defecto.</summary>
+    public bool IsCustomPath => !string.Equals(SavesPath, _scanner.DefaultSavesPath, StringComparison.OrdinalIgnoreCase);
+
+    public MyWorldsViewModel(
+        IWorldScanner scanner,
+        IFolderPicker folderPicker,
+        IFolderLauncher folderLauncher,
+        ISettingsService settings)
     {
         _scanner = scanner;
         _folderPicker = folderPicker;
+        _folderLauncher = folderLauncher;
+        _settings = settings;
 
-        SavesPath = _scanner.DefaultSavesPath;
+        // Si el usuario eligió una carpeta en otra sesión, la recuperamos
+        SavesPath = _settings.Current.SavesPath ?? _scanner.DefaultSavesPath;
         StatusText = "";
 
         // Primer escaneo al arrancar (el constructor no puede ser async)
@@ -49,7 +63,23 @@ public partial class MyWorldsViewModel : ViewModelBase
             return; // el usuario canceló
 
         SavesPath = path;
+        SaveSavesPath(path);
         await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private async Task ResetFolderAsync()
+    {
+        SavesPath = _scanner.DefaultSavesPath;
+        SaveSavesPath(null);
+        await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private async Task OpenFolderAsync(WorldItemViewModel? world)
+    {
+        if (world is not null)
+            await _folderLauncher.OpenAsync(world.FolderPath);
     }
 
     [RelayCommand]
@@ -75,6 +105,20 @@ public partial class MyWorldsViewModel : ViewModelBase
         {
             IsLoading = false;
             OnPropertyChanged(nameof(IsEmpty));
+        }
+    }
+
+    private void SaveSavesPath(string? path)
+    {
+        _settings.Current.SavesPath = path;
+
+        try
+        {
+            _settings.Save();
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // No es crítico: la app sigue funcionando, solo no recordará la carpeta
         }
     }
 }
