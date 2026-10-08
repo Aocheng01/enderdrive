@@ -1,14 +1,124 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:EnderDrive.ViewModels.Pages"
+             xmlns:items="using:EnderDrive.ViewModels"
              x:Class="EnderDrive.Views.Pages.MyWorldsView"
              x:DataType="vm:MyWorldsViewModel">
 
-    <Border Background="{StaticResource SurfaceLowBrush}"
-            CornerRadius="{StaticResource RadiusXl}"
-            Padding="12" VerticalAlignment="Top">
-        <TextBlock Classes="headline-md"
-                   Foreground="{StaticResource OnSurfaceBrush}"
-                   Text="{Binding Title}"/>
-    </Border>
+    <DockPanel>
+
+        <!-- ===== CABECERA ===== -->
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+            <StackPanel Spacing="4">
+                <TextBlock Classes="headline-lg"
+                           Foreground="{StaticResource OnSurfaceBrush}"
+                           Text="{Binding Title}"/>
+                <TextBlock Classes="body-md"
+                           Foreground="{StaticResource OnSurfaceVariantBrush}"
+                           Text="{Binding StatusText}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                        VerticalAlignment="Center">
+                <Button Classes="secondary" Command="{Binding ChooseFolderCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Classes="icon" Text="folder_open"/>
+                        <TextBlock VerticalAlignment="Center" Text="Elegir carpeta"/>
+                    </StackPanel>
+                </Button>
+                <Button Classes="icon-button" Command="{Binding RefreshCommand}"
+                        ToolTip.Tip="Volver a buscar">
+                    <TextBlock Classes="icon" Text="refresh"/>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+          <!-- ===== RUTA ACTUAL ===== -->
+        <Border DockPanel.Dock="Top" Margin="0,0,0,16" Padding="12,8"
+                Background="{StaticResource SurfaceLowestBrush}"
+                CornerRadius="{StaticResource RadiusLg}">
+            <Grid ColumnDefinitions="Auto,*">
+                <TextBlock Classes="icon" FontSize="16"
+                           Foreground="{StaticResource OutlineBrush}" Text="folder"/>
+                <TextBlock Grid.Column="1" Margin="8,0,0,0" Classes="label-mono-md"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                           Foreground="{StaticResource OnSurfaceVariantBrush}"
+                           Text="{Binding SavesPath}"/>
+            </Grid>
+        </Border>
+
+         <!-- ===== CONTENIDO: tres estados superpuestos ===== -->
+        <Panel>
+
+            <!-- Estado 1: cargando -->
+            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}"
+                         VerticalAlignment="Top" Height="4"
+                         Foreground="{StaticResource PrimaryBrush}"/>
+
+            <!-- Estado 2: vacío -->
+            <StackPanel IsVisible="{Binding IsEmpty}" Spacing="8"
+                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Classes="icon" FontSize="48" HorizontalAlignment="Center"
+                           Foreground="{StaticResource OutlineBrush}" Text="travel_explore"/>
+                <TextBlock Classes="title-lg" HorizontalAlignment="Center"
+                           Foreground="{StaticResource OnSurfaceBrush}"
+                           Text="No hay mundos en esta carpeta"/>
+                <TextBlock Classes="body-md" HorizontalAlignment="Center"
+                           Foreground="{StaticResource OnSurfaceVariantBrush}"
+                           Text="Elige la carpeta saves de tu instalación de Minecraft."/>
+            </StackPanel>
+
+            <!-- Estado 3: lista de mundos -->
+            <ScrollViewer>
+                <ItemsControl ItemsSource="{Binding Worlds}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+
+                                        <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="items:WorldItemViewModel">
+                            <Border Width="260" Margin="0,0,12,12" Padding="12"
+                                    Background="{StaticResource SurfaceLowBrush}"
+                                    CornerRadius="{StaticResource RadiusXl}">
+                                <Grid ColumnDefinitions="Auto,*">
+
+                                    <!-- Icono del mundo -->
+                                    <Border Width="56" Height="56" ClipToBounds="True"
+                                            Background="{StaticResource SurfaceHighBrush}"
+                                            CornerRadius="{StaticResource RadiusLg}">
+                                        <Panel>
+                                            <Image Source="{Binding Icon}" Stretch="UniformToFill"
+                                                   RenderOptions.BitmapInterpolationMode="None"/>
+                                            <TextBlock Classes="icon" FontSize="28"
+                                                       HorizontalAlignment="Center"
+                                                       Foreground="{StaticResource OutlineBrush}"
+                                                       IsVisible="{Binding !HasIcon}"
+                                                       Text="landscape"/>
+                                        </Panel>
+                                    </Border>
+
+                                    <!-- Datos -->
+                                    <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="4"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Classes="title-sm" TextTrimming="CharacterEllipsis"
+                                                   Foreground="{StaticResource OnSurfaceBrush}"
+                                                   Text="{Binding Name}"/>
+                                        <TextBlock Classes="label-mono-sm"
+                                                   Foreground="{StaticResource OnSurfaceVariantBrush}"
+                                                   Text="{Binding LastPlayedText}"/>
+                                        <TextBlock Classes="label-mono-sm"
+                                                   Foreground="{StaticResource PrimaryBrush}"
+                                                   Text="{Binding SizeText}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Panel>
+
+    </DockPanel>
 </UserControl>

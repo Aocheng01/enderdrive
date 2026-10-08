@@ -6,6 +6,8 @@ using EnderDrive.ViewModels;
 using EnderDrive.ViewModels.Pages;
 using EnderDrive.Views;
 using Microsoft.Extensions.DependencyInjection;
+using EnderDrive.Core.Services;
+using EnderDrive.Services;
 
 namespace EnderDrive;
 
@@ -37,7 +39,9 @@ public partial class App : Application
     {
         var services = new ServiceCollection();
 
-        // Servicios del Core (Fase 2+): services.AddSingleton<IWorldScanner, WorldScanner>();
+        // Servicios del Core
+        services.AddSingleton<IWorldScanner, WorldScanner>();
+        services.AddSingleton<IFolderPicker, FolderPicker>();
 
         // ViewModels
         services.AddSingleton<MainViewModel>();
