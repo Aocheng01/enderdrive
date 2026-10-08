@@ -31,7 +31,7 @@ public sealed class WorldScanner : IWorldScanner
             var folderName = Path.GetFileName(folder);
 
             // Si level.dat no se puede leer, usamos el nombre de la carpeta y la fecha del archivo
-            var level = LevelDatReader.TryRead(levelDat);
+            var level = LevelDatReader.TryRead(folder);
 
             worlds.Add(new WorldInfo(
                 Name: level?.LevelName ?? folderName,
@@ -42,7 +42,9 @@ public sealed class WorldScanner : IWorldScanner
                 IconPath: File.Exists(icon) ? icon : null,
                 GameVersion: level?.GameVersion,
                 GameMode: level?.GameMode,
-                IsHardcore: level?.IsHardcore ?? false));
+                IsHardcore: level?.IsHardcore ?? false,
+                Seed: level?.Seed,
+                Loader: level?.Loader));
         }
 
         return worlds.OrderByDescending(w => w.LastPlayed).ToList();

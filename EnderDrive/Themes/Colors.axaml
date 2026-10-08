@@ -32,6 +32,25 @@
   <SolidColorBrush x:Key="OutlineVariantBrush" Color="#3C4A42"/>
   <SolidColorBrush x:Key="ErrorContainerBrush" Color="#93000A"/>
 
+  <!-- Variantes con transparencia (primary/40, primary/10…) y extras del diseño de Mis Mundos -->
+  <SolidColorBrush x:Key="PrimaryRingBrush" Color="#664EDEA3"/>
+  <SolidColorBrush x:Key="PrimarySoftBrush" Color="#1A4EDEA3"/>
+  <SolidColorBrush x:Key="SecondaryFixedBrush" Color="#FFDDB8"/>
+  <SolidColorBrush x:Key="SurfaceVariantBrush" Color="#353437"/>
+  <SolidColorBrush x:Key="SurfaceLowestTranslucentBrush" Color="#CC0E0E10"/>
+
+  <!-- Fondo de la tarjeta seleccionada: degradado de izquierda a derecha -->
+  <LinearGradientBrush x:Key="SelectedCardBrush" StartPoint="0%,50%" EndPoint="100%,50%">
+    <GradientStop Color="{StaticResource SurfaceColor}" Offset="0"/>
+    <GradientStop Color="{StaticResource SurfaceHighColor}" Offset="1"/>
+  </LinearGradientBrush>
+
+  <!-- Oscurece la parte de abajo de la miniatura para que se lea la versión -->
+  <LinearGradientBrush x:Key="ThumbnailShadeBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+    <GradientStop Color="#000E0E10" Offset="0.4"/>
+    <GradientStop Color="#CC0E0E10" Offset="1"/>
+  </LinearGradientBrush>
+
   <!-- Radios del prototipo: lg = 4px, xl = 8px -->
   <CornerRadius x:Key="RadiusLg">4</CornerRadius>
   <CornerRadius x:Key="RadiusXl">8</CornerRadius>

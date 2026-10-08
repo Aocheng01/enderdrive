@@ -1,52 +1,150 @@
 using Avalonia.Media.Imaging;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using EnderDrive.Core.Models;
+using EnderDrive.Services;
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Globalization;
+using System.Threading.Tasks;
 
 namespace EnderDrive.ViewModels
 {
-    public sealed class WorldItemViewModel
+    /// <summary>
+    /// Un mundo preparado para mostrarse en una tarjeta.
+    /// No hereda de ViewModelBase para que el ViewLocator no intente buscarle una vista:
+    /// se dibuja con el DataTemplate de MyWorldsView.
+    /// </summary>
+    public sealed partial class WorldItemViewModel : ObservableObject
     {
+        private static readonly string[] ShortMonths =
+            ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
+        private readonly IFolderLauncher _folderLauncher;
+        private readonly IClipboardService _clipboard;
+
+        // Datos en bruto (para filtrar y ordenar)
         public string Name { get; }
         public string FolderName { get; }
         public string FolderPath { get; }
+        public DateTime LastPlayed { get; }
+        public long SizeBytes { get; }
+        public GameMode? GameMode { get; }
+        public bool IsHardcore { get; }
+        public string? GameVersion { get; }
+        public string? Loader { get; }
+
+        // Textos listos para la vista
         public string LastPlayedText { get; }
         public string SizeText { get; }
+        public string? SeedText { get; }
+        public string? VersionBadgeText { get; }
+        public string LoaderChipText { get; }
+        public string? GameModeText { get; }
+        public string SelectionText => $"{Name} ({SizeText})";
+
+        // Color de la etiqueta del loader
+        public bool IsModded { get; }
+        public bool IsPluginServer { get; }
+
         public Bitmap? Icon { get; }
         public bool HasIcon => Icon is not null;
 
-        // Etiquetas de la tarjeta (null = no se muestra)
-        public string? VersionText { get; }
-        public string? GameModeText { get; }
-        public bool IsHardcore { get; }
-
-        public WorldItemViewModel(WorldInfo world)
+        public WorldItemViewModel(WorldInfo world, IFolderLauncher folderLauncher, IClipboardService clipboard)
         {
+            _folderLauncher = folderLauncher;
+            _clipboard = clipboard;
+
             Name = world.Name;
             FolderName = world.FolderName;
             FolderPath = world.FolderPath;
-            LastPlayedText = world.LastPlayed.ToString("dd/MM/yyyy HH:mm");
-            SizeText = FormatSize(world.SizeBytes);
-            Icon = LoadIcon(world.IconPath);
-            VersionText = world.GameVersion;
-            GameModeText = FormatGameMode(world.GameMode);
+            LastPlayed = world.LastPlayed;
+            SizeBytes = world.SizeBytes;
+            GameMode = world.GameMode;
             IsHardcore = world.IsHardcore;
+            GameVersion = world.GameVersion;
+            Loader = FormatLoader(world.Loader);
+
+            LastPlayedText = FormatLastPlayed(world.LastPlayed, DateTime.Now);
+            SizeText = FormatSize(world.SizeBytes);
+            SeedText = world.Seed?.ToString(CultureInfo.InvariantCulture);
+            VersionBadgeText = world.GameVersion is null ? null : $"v{world.GameVersion}";
+            GameModeText = FormatGameMode(world.GameMode);
+
+            // "Hardcore 1.20.4", "Fabric 1.21", "Vanilla 26.3"…
+            var prefix = IsHardcore ? "Hardcore" : Loader ?? "Vanilla";
+            LoaderChipText = world.GameVersion is null ? prefix : $"{prefix} {world.GameVersion}";
+
+            var brand = world.Loader?.ToLowerInvariant();
+            IsModded = brand is "fabric" or "forge" or "neoforge" or "quilt";
+            IsPluginServer = brand is "paper" or "spigot" or "purpur" or "bukkit";
+
+            Icon = LoadIcon(world.IconPath);
         }
 
-        private static string FormatSize(long bytes) => bytes switch
+        /// <summary>true si el mundo coincide con el texto del buscador.</summary>
+        public bool Matches(string query)
+            => Name.Contains(query, StringComparison.CurrentCultureIgnoreCase)
+            || FolderName.Contains(query, StringComparison.CurrentCultureIgnoreCase)
+            || (SeedText?.Contains(query, StringComparison.Ordinal) ?? false)
+            || LoaderChipText.Contains(query, StringComparison.CurrentCultureIgnoreCase);
+
+        [RelayCommand]
+        private Task OpenFolderAsync() => _folderLauncher.OpenAsync(FolderPath);
+
+        [RelayCommand]
+        private Task CopySeedAsync() => SeedText is null ? Task.CompletedTask : _clipboard.SetTextAsync(SeedText);
+
+        [RelayCommand]
+        private Task CopyPathAsync() => _clipboard.SetTextAsync(FolderPath);
+
+        /// <summary>"1.42 GB", "840 MB"… Con punto decimal siempre, como en el diseño.</summary>
+        internal static string FormatSize(long bytes) => bytes switch
         {
-            >= 1L << 30 => $"{bytes / (double)(1L << 30):0.0} GB",
-            >= 1L << 20 => $"{bytes / (double)(1L << 20):0.0} MB",
-            _ => $"{bytes / 1024.0:0} KB",
+            >= 1L << 30 => string.Create(CultureInfo.InvariantCulture, $"{bytes / (double)(1L << 30):0.00} GB"),
+            >= 1L << 20 => string.Create(CultureInfo.InvariantCulture, $"{bytes / (double)(1L << 20):0} MB"),
+            _ => string.Create(CultureInfo.InvariantCulture, $"{bytes / 1024.0:0} KB"),
+        };
+
+        /// <summary>"Hoy, 18:30 (Hace 2h)", "Ayer, 22:15", "Hace 3 días" o "12 Ene 2025".</summary>
+        private static string FormatLastPlayed(DateTime date, DateTime now)
+        {
+            var ago = now - date;
+
+            if (date.Date == now.Date)
+            {
+                var relative = ago.TotalMinutes < 1 ? "ahora mismo"
+                    : ago.TotalHours < 1 ? $"Hace {(int)ago.TotalMinutes} min"
+                    : $"Hace {(int)ago.TotalHours}h";
+                return $"Hoy, {date:HH:mm} ({relative})";
+            }
+
+            if (date.Date == now.Date.AddDays(-1))
+                return $"Ayer, {date:HH:mm}";
+
+            if (ago.TotalDays < 7)
+                return $"Hace {(int)Math.Ceiling(ago.TotalDays)} días";
+
+            return $"{date.Day} {ShortMonths[date.Month - 1]} {date.Year}";
+        }
+
+        private static string? FormatLoader(string? brand) => brand?.ToLowerInvariant() switch
+        {
+            null or "" => null,
+            "vanilla" => "Vanilla",
+            "fabric" => "Fabric",
+            "forge" => "Forge",
+            "neoforge" => "NeoForge",
+            "quilt" => "Quilt",
+            "paper" => "Paper",
+            _ => char.ToUpperInvariant(brand[0]) + brand[1..],
         };
 
         private static string? FormatGameMode(GameMode? mode) => mode switch
         {
-            GameMode.Survival => "Supervivencia",
-            GameMode.Creative => "Creativo",
-            GameMode.Adventure => "Aventura",
-            GameMode.Spectator => "Espectador",
+            Core.Models.GameMode.Survival => "Supervivencia",
+            Core.Models.GameMode.Creative => "Creativo",
+            Core.Models.GameMode.Adventure => "Aventura",
+            Core.Models.GameMode.Spectator => "Espectador",
             _ => null,
         };
 

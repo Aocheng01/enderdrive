@@ -10,16 +10,26 @@ internal sealed record LevelData(
     DateTime? LastPlayed,
     string? GameVersion,
     GameMode? GameMode,
-    bool IsHardcore);
+    bool IsHardcore,
+    long? Seed,
+    string? Loader);
 
+/// <summary>
+/// Lee los datos de un mundo. Minecraft ha cambiado dónde guarda algunos campos:
+/// <list type="bullet">
+/// <item>Semilla: Data.RandomSeed (antes de 1.16), Data.WorldGenSettings.seed (1.16–1.21)
+/// y data/minecraft/world_gen_settings.dat (26.x).</item>
+/// <item>Hardcore: Data.hardcore (hasta 1.21) y Data.difficulty_settings.hardcore (26.x).</item>
+/// </list>
+/// </summary>
 internal static partial class LevelDatReader
 {
-    /// <summary>Lee level.dat. Devuelve null si el archivo está dañado o no se puede leer.</summary>
-    public static LevelData? TryRead(string levelDatPath)
+    /// <summary>Devuelve null si level.dat está dañado o no se puede leer.</summary>
+    public static LevelData? TryRead(string worldFolder)
     {
         try
         {
-            var data = NbtReader.ReadFile(levelDatPath).GetCompound("Data");
+            var data = NbtReader.ReadFile(Path.Combine(worldFolder, "level.dat")).GetCompound("Data");
             if (data is null)
                 return null;
 
@@ -33,7 +43,29 @@ internal static partial class LevelDatReader
                     : null,
                 GameVersion: data.GetCompound("Version")?.GetString("Name"),
                 GameMode: gameType is >= 0 and <= 3 ? (GameMode)gameType.Value : null,
-                IsHardcore: data.GetBool("hardcore") ?? false);
+                IsHardcore: data.GetBool("hardcore")
+                    ?? data.GetCompound("difficulty_settings")?.GetBool("hardcore")
+                    ?? false,
+                Seed: data.GetLong("RandomSeed")
+                    ?? data.GetCompound("WorldGenSettings")?.GetLong("seed")
+                    ?? ReadSeedFromWorldGenFile(worldFolder),
+                Loader: data.GetList("ServerBrands")?.OfType<string>().FirstOrDefault());
+        }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    private static long? ReadSeedFromWorldGenFile(string worldFolder)
+    {
+        var path = Path.Combine(worldFolder, "data", "minecraft", "world_gen_settings.dat");
+        if (!File.Exists(path))
+            return null;
+
+        try
+        {
+            return NbtReader.ReadFile(path).GetCompound("data")?.GetLong("seed");
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {

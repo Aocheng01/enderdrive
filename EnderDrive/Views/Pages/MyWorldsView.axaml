@@ -5,57 +5,215 @@
              x:Class="EnderDrive.Views.Pages.MyWorldsView"
              x:DataType="vm:MyWorldsViewModel">
 
+    <!-- Diseño de referencia: docs/design/mis-mundos.html -->
     <DockPanel>
 
-        <!-- ===== CABECERA ===== -->
-        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,16">
-            <StackPanel Spacing="4">
-                <TextBlock Classes="headline-lg"
-                           Foreground="{StaticResource OnSurfaceBrush}"
-                           Text="{Binding Title}"/>
-                <TextBlock Classes="body-md"
-                           Foreground="{StaticResource OnSurfaceVariantBrush}"
-                           Text="{Binding StatusText}"/>
-            </StackPanel>
+        <!-- ===== 1. BARRA SUPERIOR: título + buscador + filtros ===== -->
+        <Border DockPanel.Dock="Top" Margin="0,0,0,12" Padding="8"
+                Background="{StaticResource SurfaceLowBrush}"
+                CornerRadius="{StaticResource RadiusXl}"
+                BoxShadow="0 1 2 0 #40000000">
+            <!-- Columnas: icono | título | buscador (se encoge si falta sitio) | filtros y botones -->
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto">
 
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
-                        VerticalAlignment="Center">
-                <Button Classes="secondary" Command="{Binding ChooseFolderCommand}">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <TextBlock Classes="icon" Text="folder_open"/>
-                        <TextBlock VerticalAlignment="Center" Text="Elegir carpeta"/>
+                <!-- Icono -->
+                <Border Width="32" Height="32" VerticalAlignment="Center"
+                        Background="{StaticResource SurfaceBrush}"
+                        CornerRadius="{StaticResource RadiusLg}">
+                    <TextBlock Classes="icon" HorizontalAlignment="Center"
+                               Foreground="{StaticResource PrimaryBrush}" Text="folder_special"/>
+                </Border>
+
+                <!-- Migas de pan + título + ruta -->
+                <StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
+                    <TextBlock Classes="label-mono-sm" Foreground="{StaticResource OutlineBrush}"
+                               Text="EnderDrive  /  Saves Vault"/>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Classes="headline-md" Foreground="{StaticResource OnSurfaceBrush}"
+                                   Text="{Binding Title}"/>
+                        <Border Classes="chip" Background="{StaticResource SurfaceHighestBrush}"
+                                ToolTip.Tip="{Binding SavesPath}">
+                            <TextBlock Text="{Binding SavesPathShort}"/>
+                        </Border>
                     </StackPanel>
-                </Button>
-                <Button Classes="icon-button" Command="{Binding RefreshCommand}"
-                        ToolTip.Tip="Volver a buscar">
-                    <TextBlock Classes="icon" Text="refresh"/>
-                </Button>
-            </StackPanel>
-        </Grid>
+                </StackPanel>
 
-          <!-- ===== RUTA ACTUAL ===== -->
-        <Border DockPanel.Dock="Top" Margin="0,0,0,16" Padding="12,8"
-                Background="{StaticResource SurfaceLowestBrush}"
-                CornerRadius="{StaticResource RadiusLg}">
-            <Grid ColumnDefinitions="Auto,*,Auto">
-                <TextBlock Classes="icon" FontSize="16"
-                           Foreground="{StaticResource OutlineBrush}" Text="folder"/>
-                <TextBlock Grid.Column="1" Margin="8,0,0,0" Classes="label-mono-md"
-                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
-                           Foreground="{StaticResource OnSurfaceVariantBrush}"
-                           Text="{Binding SavesPath}"/>
+                <!-- Buscador -->
+                <TextBox Grid.Column="2" Classes="search" MaxWidth="256" Margin="8,0,4,0"
+                         HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                         PlaceholderText="Buscar mundo, semilla o versión..."
+                         Text="{Binding SearchText}">
+                    <TextBox.InnerLeftContent>
+                        <TextBlock Classes="icon" FontSize="16" Margin="10,0,4,0"
+                                   Foreground="{StaticResource OutlineBrush}" Text="search"/>
+                    </TextBox.InnerLeftContent>
+                </TextBox>
 
-                <!-- Solo aparece si se eligió una carpeta distinta de la de por defecto -->
-                <Button Grid.Column="2" Classes="icon-button" Height="24" Width="24"
-                        Margin="8,0,0,0" IsVisible="{Binding IsCustomPath}"
-                        Command="{Binding ResetFolderCommand}"
-                        ToolTip.Tip="Volver a la carpeta por defecto">
-                    <TextBlock Classes="icon" FontSize="16" Text="restart_alt"/>
-                </Button>
+                <!-- Filtros y acciones -->
+                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4"
+                            VerticalAlignment="Center">
+                    <ComboBox Classes="toolbar" ItemsSource="{Binding TypeFilters}"
+                              SelectedItem="{Binding SelectedTypeFilter}"/>
+
+                    <ComboBox Classes="toolbar" ItemsSource="{Binding SortOptions}"
+                              SelectedItem="{Binding SelectedSort}">
+                        <!-- Lo que se ve con el desplegable cerrado: icono + texto -->
+                        <ComboBox.SelectionBoxItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Classes="icon" FontSize="15"
+                                               Foreground="{StaticResource OutlineBrush}" Text="sort"/>
+                                    <TextBlock VerticalAlignment="Center" Text="{Binding}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.SelectionBoxItemTemplate>
+                    </ComboBox>
+
+                    <Button Classes="toolbar" Command="{Binding ChooseFolderCommand}"
+                            ToolTip.Tip="Elegir carpeta saves">
+                        <TextBlock Classes="icon" FontSize="16" Text="folder_open"/>
+                    </Button>
+                    <Button Classes="toolbar" Command="{Binding ResetFolderCommand}"
+                            IsVisible="{Binding IsCustomPath}"
+                            ToolTip.Tip="Volver a la carpeta por defecto">
+                        <TextBlock Classes="icon" FontSize="16" Text="restart_alt"/>
+                    </Button>
+                    <Button Classes="toolbar" Command="{Binding RefreshCommand}"
+                            ToolTip.Tip="Actualizar mundos">
+                        <TextBlock Classes="icon" FontSize="16" Text="refresh"/>
+                    </Button>
+                </StackPanel>
             </Grid>
         </Border>
 
-         <!-- ===== CONTENIDO: tres estados superpuestos ===== -->
+        <!-- ===== 2. RESUMEN + BARRA DE EXPERIENCIA ===== -->
+        <Border DockPanel.Dock="Top" Margin="0,0,0,12" Padding="8"
+                Background="{StaticResource SurfaceLowBrush}"
+                CornerRadius="{StaticResource RadiusXl}"
+                BoxShadow="0 1 2 0 #40000000">
+            <Grid ColumnDefinitions="*,Auto">
+
+                <!-- Izquierda: recuento y tamaño -->
+                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Ellipse Classes="pulse" Width="10" Height="10" VerticalAlignment="Center"
+                                 Fill="{StaticResource PrimaryBrush}"/>
+                        <TextBlock Classes="title-sm" VerticalAlignment="Center"
+                                   Foreground="{StaticResource OnSurfaceBrush}" Text="{Binding StatusText}"/>
+                        <TextBlock Classes="label-mono-sm" VerticalAlignment="Center"
+                                   Foreground="{StaticResource OutlineVariantBrush}" Text="/"/>
+                        <TextBlock Classes="label-mono-md" VerticalAlignment="Center"
+                                   Foreground="{StaticResource PrimaryBrush}" Text="{Binding TotalSizeText}"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Classes="icon" FontSize="16"
+                                   Foreground="{StaticResource PrimaryBrush}" Text="schedule"/>
+                        <TextBlock Classes="body-sm" VerticalAlignment="Center"
+                                   Foreground="{StaticResource OutlineBrush}" Text="{Binding LastScanText}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Derecha: cuota de la nube con estilo de barra de experiencia -->
+                <Grid Grid.Column="1" Width="420" Margin="12,0,0,0" ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="4" VerticalAlignment="Center">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Classes="icon" FontSize="12"
+                                           Foreground="{StaticResource PrimaryBrush}" Text="cloud_done"/>
+                                <TextBlock Classes="label-mono-sm" VerticalAlignment="Center"
+                                           Foreground="{StaticResource OnSurfaceVariantBrush}"
+                                           Text="Almacenamiento en la nube"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                <TextBlock Classes="label-mono-sm" Foreground="{StaticResource PrimaryBrush}"
+                                           Text="{Binding CloudUsageText}"/>
+                                <TextBlock Classes="label-mono-sm" FontWeight="Normal"
+                                           Foreground="{StaticResource OutlineBrush}"
+                                           Text="{Binding CloudQuotaText}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- La barra y, encima, 10 segmentos como la barra de XP de Minecraft -->
+                        <Panel>
+                            <ProgressBar Classes="xp" Maximum="100" Value="{Binding CloudPercent}"/>
+                            <UniformGrid Columns="10" Rows="1" IsHitTestVisible="False" Margin="4,0">
+                                <Border BorderThickness="0,0,2,0" BorderBrush="#CC0E0E10"/>
+                                <Border BorderThickness="0,0,2,0" BorderBrush="#CC0E0E10"/>
+                                <Border BorderThickness="0,0,2,0" BorderBrush="#CC0E0E10"/>
+                                <Border BorderThickness="0,0,2,0" BorderBrush="#CC0E0E10"/>
+                                <Border BorderThickness="0,0,2,0" BorderBrush="#CC0E0E10"/>
+                                <Border BorderThickness="0,0,2,0" BorderBrush="#CC0E0E10"/>
+                                <Border BorderThickness="0,0,2,0" BorderBrush="#CC0E0E10"/>
+                                <Border BorderThickness="0,0,2,0" BorderBrush="#CC0E0E10"/>
+                                <Border BorderThickness="0,0,2,0" BorderBrush="#CC0E0E10"/>
+                            </UniformGrid>
+                        </Panel>
+                    </StackPanel>
+
+                    <!-- "Nivel" = porcentaje usado -->
+                    <Border Grid.Column="1" Width="24" Height="24" Margin="12,0,0,0"
+                            VerticalAlignment="Center" BoxShadow="0 1 3 0 #66000000"
+                            Background="{StaticResource SurfaceBrush}"
+                            CornerRadius="{StaticResource RadiusLg}">
+                        <TextBlock Classes="label-mono-sm" FontWeight="Bold" HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" Foreground="{StaticResource PrimaryBrush}"
+                                   Text="{Binding CloudLevelText}"/>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- ===== 4. BARRA INFERIOR: mundo seleccionado + acciones ===== -->
+        <!-- Va antes que la lista en el XAML porque DockPanel coloca los anclados primero -->
+        <Border DockPanel.Dock="Bottom" Margin="0,8,0,0" Padding="8"
+                Background="{StaticResource SurfaceLowestBrush}"
+                CornerRadius="{StaticResource RadiusXl}"
+                BoxShadow="0 8 16 0 #80000000">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Border Width="24" Height="24" Background="{StaticResource SurfaceBrush}"
+                            CornerRadius="{StaticResource RadiusLg}">
+                        <TextBlock Classes="icon" FontSize="15" HorizontalAlignment="Center"
+                                   Foreground="{StaticResource PrimaryBrush}" Text="check_box"/>
+                    </Border>
+                    <TextBlock Classes="body-md" VerticalAlignment="Center"
+                               Foreground="{StaticResource OnSurfaceVariantBrush}" Text="Mundo seleccionado:"/>
+                    <TextBlock Classes="title-sm" VerticalAlignment="Center"
+                               Foreground="{StaticResource PrimaryBrush}"
+                               Text="{Binding SelectedWorld.SelectionText, FallbackValue='Ninguno'}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                    <Button Classes="subtle" IsEnabled="{Binding HasSelection}"
+                            Command="{Binding SelectedWorld.OpenFolderCommand, FallbackValue={x:Null}}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Classes="icon" FontSize="16"
+                                       Foreground="{StaticResource OutlineBrush}" Text="folder"/>
+                            <TextBlock VerticalAlignment="Center" Text="Abrir en el Explorador"/>
+                        </StackPanel>
+                    </Button>
+                    <!-- Fase 4 (copias de seguridad) -->
+                    <Button Classes="secondary" FontSize="12" IsEnabled="False"
+                            ToolTip.ShowOnDisabled="True" ToolTip.Tip="Disponible con las copias de seguridad">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Classes="icon" FontSize="16"
+                                       Foreground="{StaticResource SecondaryBrush}" Text="history"/>
+                            <TextBlock VerticalAlignment="Center" Text="Restaurar versión anterior"/>
+                        </StackPanel>
+                    </Button>
+                    <!-- Fase 3 (sincronización con la nube) -->
+                    <Button Classes="accent" IsEnabled="False"
+                            ToolTip.ShowOnDisabled="True" ToolTip.Tip="Disponible con la sincronización en la nube">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Classes="icon" FontSize="17" Text="sync"/>
+                            <TextBlock VerticalAlignment="Center" Text="Sincronizar ahora"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ===== 3. CONTENIDO: tres estados superpuestos ===== -->
         <Panel>
 
             <!-- Estado 1: cargando -->
@@ -70,88 +228,166 @@
                            Foreground="{StaticResource OutlineBrush}" Text="travel_explore"/>
                 <TextBlock Classes="title-lg" HorizontalAlignment="Center"
                            Foreground="{StaticResource OnSurfaceBrush}"
-                           Text="No hay mundos en esta carpeta"/>
+                           Text="No hay mundos que mostrar"/>
                 <TextBlock Classes="body-md" HorizontalAlignment="Center"
                            Foreground="{StaticResource OnSurfaceVariantBrush}"
-                           Text="Elige la carpeta saves de tu instalación de Minecraft."/>
+                           Text="Cambia la búsqueda o elige la carpeta saves de tu instalación de Minecraft."/>
             </StackPanel>
 
-            <!-- Estado 3: lista de mundos -->
-            <ScrollViewer>
-                <ItemsControl ItemsSource="{Binding Worlds}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
+            <!-- Estado 3: lista de mundos. ListBox (y no ItemsControl) porque ahora se puede seleccionar -->
+            <ListBox Classes="world-list" ItemsSource="{Binding Worlds}"
+                     SelectedItem="{Binding SelectedWorld}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="items:WorldItemViewModel">
+                        <Border Classes="world-card">
+                            <Panel>
+                                <!-- Franja verde (solo visible si está seleccionada, ver Controls.axaml) -->
+                                <Border Classes="world-stripe" Width="4" Margin="0,8"
+                                        HorizontalAlignment="Left" CornerRadius="0,2,2,0"
+                                        Background="{StaticResource PrimaryBrush}"/>
 
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="items:WorldItemViewModel">
-                            <Border Classes="world-card" Width="300" Margin="0,0,12,12">
-                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                <Grid Margin="16,8,8,8" ColumnDefinitions="Auto,*,Auto">
 
-                                    <!-- Icono del mundo -->
-                                    <Border Width="56" Height="56" ClipToBounds="True"
-                                            Background="{StaticResource SurfaceHighBrush}"
+                                    <!-- Miniatura -->
+                                    <Border Width="128" Height="80" ClipToBounds="True"
+                                            Background="{StaticResource SurfaceLowestBrush}"
                                             CornerRadius="{StaticResource RadiusLg}">
                                         <Panel>
                                             <Image Source="{Binding Icon}" Stretch="UniformToFill"
                                                    RenderOptions.BitmapInterpolationMode="None"/>
-                                            <TextBlock Classes="icon" FontSize="28"
+                                            <TextBlock Classes="icon" FontSize="32"
                                                        HorizontalAlignment="Center"
                                                        Foreground="{StaticResource OutlineBrush}"
-                                                       IsVisible="{Binding !HasIcon}"
-                                                       Text="landscape"/>
+                                                       IsVisible="{Binding !HasIcon}" Text="landscape"/>
+                                            <Border Background="{StaticResource ThumbnailShadeBrush}"/>
+                                            <Border Margin="4" Padding="4,0" CornerRadius="2"
+                                                    HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                                    Background="{StaticResource SurfaceLowestTranslucentBrush}"
+                                                    IsVisible="{Binding VersionBadgeText, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                                <TextBlock Classes="label-mono-sm"
+                                                           Foreground="{StaticResource OnSurfaceBrush}"
+                                                           Text="{Binding VersionBadgeText}"/>
+                                            </Border>
                                         </Panel>
                                     </Border>
 
-                                    <!-- Datos -->
-                                    <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="4"
+                                    <!-- Información -->
+                                    <StackPanel Grid.Column="1" Margin="12,0" Spacing="2"
                                                 VerticalAlignment="Center">
-                                        <TextBlock Classes="title-sm" TextTrimming="CharacterEllipsis"
-                                                   Foreground="{StaticResource OnSurfaceBrush}"
-                                                   ToolTip.Tip="{Binding FolderName}"
-                                                   Text="{Binding Name}"/>
 
-                                        <!-- Etiquetas: cada una se oculta si no hay dato -->
-                                        <WrapPanel>
-                                            <Border Classes="chip" Margin="0,0,4,2"
-                                                    IsVisible="{Binding VersionText, Converter={x:Static ObjectConverters.IsNotNull}}">
-                                                <TextBlock Text="{Binding VersionText}"/>
+                                        <!-- Nombre + etiquetas -->
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <TextBlock Classes="headline-md" MaxWidth="320"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Foreground="{StaticResource OnSurfaceBrush}"
+                                                       ToolTip.Tip="{Binding FolderName}"
+                                                       Text="{Binding Name}"/>
+                                            <!-- Classes.hardcore="true" añade la clase "hardcore" cuando el valor es true   -->
+                                            <Border Classes="chip"
+                                                    Classes.hardcore="{Binding IsHardcore}"
+                                                    Classes.modded="{Binding IsModded}"
+                                                    Classes.plugin="{Binding IsPluginServer}">
+                                                <TextBlock Text="{Binding LoaderChipText}"/>
                                             </Border>
-                                            <Border Classes="chip" Margin="0,0,4,2"
+                                            <Border Classes="chip"
                                                     IsVisible="{Binding GameModeText, Converter={x:Static ObjectConverters.IsNotNull}}">
                                                 <TextBlock Text="{Binding GameModeText}"/>
                                             </Border>
-                                            <Border Classes="chip danger" Margin="0,0,4,2"
-                                                    IsVisible="{Binding IsHardcore}">
-                                                <TextBlock Text="Hardcore"/>
-                                            </Border>
-                                        </WrapPanel>
+                                        </StackPanel>
 
-                                        <TextBlock Classes="label-mono-sm"
-                                                   Foreground="{StaticResource OnSurfaceVariantBrush}"
-                                                   Text="{Binding LastPlayedText}"/>
-                                        <TextBlock Classes="label-mono-sm"
-                                                   Foreground="{StaticResource PrimaryBrush}"
-                                                   Text="{Binding SizeText}"/>
+                                        <!-- Semilla, tamaño y fecha -->
+                                        <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,2,0,0">
+                                            <Border Padding="6,2" CornerRadius="2"
+                                                    Background="{StaticResource SurfaceLowBrush}"
+                                                    IsVisible="{Binding SeedText, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <TextBlock Classes="icon" FontSize="13"
+                                                               Foreground="{StaticResource OutlineBrush}" Text="key"/>
+                                                    <TextBlock Classes="label-mono-sm" VerticalAlignment="Center"
+                                                               Foreground="{StaticResource OnSurfaceVariantBrush}"
+                                                               Text="{Binding SeedText}"/>
+                                                    <Button Classes="inline" Command="{Binding CopySeedCommand}"
+                                                            ToolTip.Tip="Copiar semilla">
+                                                        <TextBlock Classes="icon" FontSize="12" Text="content_copy"/>
+                                                    </Button>
+                                                </StackPanel>
+                                            </Border>
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <TextBlock Classes="icon" FontSize="14"
+                                                           Foreground="{StaticResource OutlineBrush}" Text="hard_drive"/>
+                                                <TextBlock Classes="body-sm" VerticalAlignment="Center"
+                                                           Foreground="{StaticResource OnSurfaceVariantBrush}"
+                                                           Text="{Binding SizeText}"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <TextBlock Classes="icon" FontSize="14"
+                                                           Foreground="{StaticResource OutlineBrush}" Text="history"/>
+                                                <TextBlock Classes="body-sm" VerticalAlignment="Center"
+                                                           Foreground="{StaticResource OnSurfaceVariantBrush}"
+                                                           Text="{Binding LastPlayedText}"/>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!-- Estado de sincronización (Fase 3: estados reales) -->
+                                        <Border Classes="status-badge" Margin="0,4,0,0"
+                                                Background="{StaticResource SurfaceHighestBrush}">
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Classes="icon" FontSize="13"
+                                                           Foreground="{StaticResource OutlineBrush}" Text="cloud_off"/>
+                                                <TextBlock Classes="label-mono-sm" VerticalAlignment="Center"
+                                                           Foreground="{StaticResource OutlineBrush}" Text="Solo en local"/>
+                                            </StackPanel>
+                                        </Border>
                                     </StackPanel>
 
-                                    <!-- Acciones. El comando vive en MyWorldsViewModel, no en el mundo:
-                                         subimos al ItemsControl para llegar a su DataContext -->
-                                    <Button Grid.Column="2" Classes="icon-button" VerticalAlignment="Top"
-                                            Margin="8,0,0,0" ToolTip.Tip="Abrir carpeta"
-                                            Command="{Binding $parent[ItemsControl].((vm:MyWorldsViewModel)DataContext).OpenFolderCommand}"
-                                            CommandParameter="{Binding}">
-                                        <TextBlock Classes="icon" Text="folder_open"/>
-                                    </Button>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
-        </Panel>
+                                    <!-- Acciones -->
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4"
+                                                VerticalAlignment="Center">
+                                        <Button Classes="secondary" IsEnabled="False"
+                                                ToolTip.ShowOnDisabled="True"
+                                                ToolTip.Tip="Disponible con la sincronización en la nube">
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Classes="icon" FontSize="16"
+                                                           Foreground="{StaticResource PrimaryBrush}" Text="cloud_upload"/>
+                                                <TextBlock VerticalAlignment="Center" FontWeight="SemiBold"
+                                                           Text="Habilitar Cloud Sync"/>
+                                            </StackPanel>
+                                        </Button>
 
+                                        <!-- Menú ⋮: el Flyout hereda el DataContext del botón (el mundo) -->
+                                        <Button Classes="icon-button" ToolTip.Tip="Más opciones">
+                                            <TextBlock Classes="icon" FontSize="16" Text="more_vert"/>
+                                            <Button.Flyout>
+                                                <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                                    <MenuItem Header="Abrir en el Explorador"
+                                                              Command="{Binding OpenFolderCommand}">
+                                                        <MenuItem.Icon>
+                                                            <TextBlock Classes="icon" FontSize="16" Text="folder_open"/>
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <MenuItem Header="Copiar semilla"
+                                                              Command="{Binding CopySeedCommand}"
+                                                              IsEnabled="{Binding SeedText, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                                        <MenuItem.Icon>
+                                                            <TextBlock Classes="icon" FontSize="16" Text="key"/>
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <MenuItem Header="Copiar ruta de la carpeta"
+                                                              Command="{Binding CopyPathCommand}">
+                                                        <MenuItem.Icon>
+                                                            <TextBlock Classes="icon" FontSize="16" Text="content_copy"/>
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                </MenuFlyout>
+                                            </Button.Flyout>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </Panel>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Panel>
     </DockPanel>
 </UserControl>

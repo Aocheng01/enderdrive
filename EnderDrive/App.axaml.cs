@@ -46,6 +46,7 @@ public partial class App : Application
         // Servicios de la app (necesitan la ventana de Avalonia)
         services.AddSingleton<IFolderPicker, FolderPicker>();
         services.AddSingleton<IFolderLauncher, FolderLauncher>();
+        services.AddSingleton<IClipboardService, ClipboardService>();
 
         // ViewModels
         services.AddSingleton<MainViewModel>();

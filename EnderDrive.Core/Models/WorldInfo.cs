@@ -13,6 +13,8 @@ namespace EnderDrive.Core.Models
         string? IconPath,
         string? GameVersion,
         GameMode? GameMode,
-        bool IsHardcore
+        bool IsHardcore,
+        long? Seed,
+        string? Loader
         );
 }
