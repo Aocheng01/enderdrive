@@ -1,8 +1,201 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="EnderDrive.Views.Pages.CloudSyncView">
-  Welcome to Avalonia!
+             xmlns:vm="using:EnderDrive.ViewModels.Pages"
+             x:Class="EnderDrive.Views.Pages.CloudSyncView"
+             x:DataType="vm:CloudSyncViewModel">
+
+    <DockPanel>
+
+        <!-- ===== BARRA SUPERIOR ===== -->
+        <Border DockPanel.Dock="Top" Margin="0,0,0,12" Padding="8"
+                Background="{StaticResource SurfaceLowBrush}"
+                CornerRadius="{StaticResource RadiusXl}"
+                BoxShadow="0 1 2 0 #40000000">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Width="32" Height="32" VerticalAlignment="Center"
+                        Background="{StaticResource SurfaceBrush}"
+                        CornerRadius="{StaticResource RadiusLg}">
+                    <TextBlock Classes="icon" HorizontalAlignment="Center"
+                               Foreground="{StaticResource PrimaryBrush}" Text="sync_saved_locally"/>
+                </Border>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Classes="label-mono-sm" Foreground="{StaticResource OutlineBrush}"
+                               Text="EnderDrive  /  Cloud Relay"/>
+                    <TextBlock Classes="headline-md" Foreground="{StaticResource OnSurfaceBrush}"
+                               Text="{Binding Title}"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer>
+            <StackPanel Spacing="12" MaxWidth="720" HorizontalAlignment="Left">
+
+                <!-- ===== ESTADO A: faltan las credenciales de la app (aviso para el desarrollador) ===== -->
+                <Border Padding="16" IsVisible="{Binding !Cloud.IsConfigured}"
+                        Background="{StaticResource SurfaceLowBrush}"
+                        CornerRadius="{StaticResource RadiusXl}">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <TextBlock Classes="icon" FontSize="28" VerticalAlignment="Top"
+                                   Foreground="{StaticResource SecondaryBrush}" Text="key_off"/>
+                        <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="6">
+                            <TextBlock Classes="title-lg" Foreground="{StaticResource OnSurfaceBrush}"
+                                       Text="Faltan las credenciales de Google"/>
+                            <TextBlock Classes="body-md" TextWrapping="Wrap"
+                                       Foreground="{StaticResource OnSurfaceVariantBrush}"
+                                       Text="Para conectar con Google Drive, la app necesita su archivo de credenciales OAuth. Descárgalo de Google Cloud Console, renómbralo y colócalo en la carpeta del proyecto EnderDrive con este nombre:"/>
+                            <Border HorizontalAlignment="Left" Padding="8,4" CornerRadius="2"
+                                    Background="{StaticResource SurfaceLowestBrush}">
+                                <TextBlock Classes="label-mono-md" Foreground="{StaticResource PrimaryBrush}"
+                                           Text="{Binding CredentialsFileName}"/>
+                            </Border>
+                            <TextBlock Classes="body-sm" TextWrapping="Wrap"
+                                       Foreground="{StaticResource OutlineBrush}"
+                                       Text="Después, vuelve a compilar y abrir la app."/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- ===== ESTADO B: sin conectar ===== -->
+                <Border Padding="20" IsVisible="{Binding Cloud.IsSignedOut}"
+                        Background="{StaticResource SurfaceLowBrush}"
+                        CornerRadius="{StaticResource RadiusXl}">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Border Width="48" Height="48" Background="{StaticResource SurfaceBrush}"
+                                    CornerRadius="{StaticResource RadiusXl}">
+                                <TextBlock Classes="icon" FontSize="28" HorizontalAlignment="Center"
+                                           Foreground="{StaticResource PrimaryBrush}" Text="add_to_drive"/>
+                            </Border>
+                            <StackPanel VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Classes="title-lg" Foreground="{StaticResource OnSurfaceBrush}"
+                                           Text="Conecta tu Google Drive"/>
+                                <TextBlock Classes="body-md" Foreground="{StaticResource OnSurfaceVariantBrush}"
+                                           Text="Para guardar tus mundos en la nube y llevarlos a otro PC."/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Qué permiso pedimos y por qué: da confianza al usuario -->
+                        <Border Padding="12" Background="{StaticResource SurfaceLowestBrush}"
+                                CornerRadius="{StaticResource RadiusLg}">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock Classes="icon" FontSize="18" VerticalAlignment="Top"
+                                           Foreground="{StaticResource PrimaryBrush}" Text="shield_lock"/>
+                                <TextBlock Grid.Column="1" Margin="8,0,0,0" Classes="body-sm" TextWrapping="Wrap"
+                                           Foreground="{StaticResource OnSurfaceVariantBrush}"
+                                           Text="EnderDrive solo podrá ver los archivos que él mismo cree en tu Drive (las copias de tus mundos). No tendrá acceso al resto de tus archivos."/>
+                            </Grid>
+                        </Border>
+
+                        <Button Classes="emerald" HorizontalAlignment="Left" Height="36"
+                                Command="{Binding Cloud.SignInCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Classes="icon" FontSize="18" Text="login"/>
+                                <TextBlock VerticalAlignment="Center" Text="Conectar con Google Drive"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <!-- ===== ESTADO C: esperando al navegador / recuperando sesión ===== -->
+                <Border Padding="20" IsVisible="{Binding Cloud.IsBusy}"
+                        Background="{StaticResource SurfaceLowBrush}"
+                        CornerRadius="{StaticResource RadiusXl}">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <TextBlock Classes="icon spin" FontSize="28"
+                                       Foreground="{StaticResource PrimaryBrush}" Text="sync"/>
+                            <StackPanel VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Classes="title-lg" Foreground="{StaticResource OnSurfaceBrush}"
+                                           Text="Conectando…"/>
+                                <TextBlock Classes="body-md" TextWrapping="Wrap"
+                                           Foreground="{StaticResource OnSurfaceVariantBrush}"
+                                           IsVisible="{Binding Cloud.IsWaitingForBrowser}"
+                                           Text="Se ha abierto tu navegador. Inicia sesión con tu cuenta de Google y pulsa «Permitir»."/>
+                            </StackPanel>
+                        </StackPanel>
+                        <Button Classes="secondary" HorizontalAlignment="Left"
+                                IsVisible="{Binding Cloud.IsWaitingForBrowser}"
+                                Command="{Binding Cloud.CancelSignInCommand}" Content="Cancelar"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- ===== ESTADO D: conectado ===== -->
+                <Border Padding="20" IsVisible="{Binding Cloud.IsSignedIn}"
+                        Background="{StaticResource SurfaceLowBrush}"
+                        CornerRadius="{StaticResource RadiusXl}">
+                    <StackPanel Spacing="16">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <!-- Avatar con la inicial -->
+                            <Border Width="48" Height="48" CornerRadius="24"
+                                    Background="{StaticResource PrimaryBrush}">
+                                <TextBlock Classes="headline-md" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Foreground="{StaticResource OnPrimaryBrush}" Text="{Binding Cloud.AvatarText}"/>
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center" Spacing="2">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Classes="title-lg" Foreground="{StaticResource OnSurfaceBrush}"
+                                               Text="{Binding Cloud.DisplayName}"/>
+                                    <Border Classes="status-badge" Background="{StaticResource PrimarySoftBrush}"
+                                            VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <Ellipse Classes="pulse" Width="6" Height="6"
+                                                     Fill="{StaticResource PrimaryBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Classes="label-mono-sm" Foreground="{StaticResource PrimaryBrush}"
+                                                       Text="Conectado"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Classes="body-md" Foreground="{StaticResource OnSurfaceVariantBrush}"
+                                           Text="{Binding Cloud.Email}"/>
+                            </StackPanel>
+                            <Button Grid.Column="2" Classes="subtle" VerticalAlignment="Center"
+                                    Command="{Binding Cloud.SignOutCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Classes="icon" FontSize="16"
+                                               Foreground="{StaticResource TertiaryBrush}" Text="logout"/>
+                                    <TextBlock VerticalAlignment="Center" Text="Desconectar"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <!-- Espacio usado en Google Drive -->
+                        <StackPanel Spacing="6">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock Classes="icon" FontSize="14"
+                                               Foreground="{StaticResource PrimaryBrush}" Text="cloud_done"/>
+                                    <TextBlock Classes="label-mono-sm" VerticalAlignment="Center"
+                                               Foreground="{StaticResource OnSurfaceVariantBrush}"
+                                               Text="Espacio en Google Drive"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                    <TextBlock Classes="label-mono-sm" Foreground="{StaticResource PrimaryBrush}"
+                                               Text="{Binding Cloud.QuotaUsedText}"/>
+                                    <TextBlock Classes="label-mono-sm" FontWeight="Normal"
+                                               Foreground="{StaticResource OutlineBrush}"
+                                               Text="{Binding Cloud.QuotaLimitText}"/>
+                                </StackPanel>
+                            </Grid>
+                            <ProgressBar Classes="xp" Maximum="100" Value="{Binding Cloud.QuotaPercent}"/>
+                        </StackPanel>
+
+                        <TextBlock Classes="body-sm" TextWrapping="Wrap"
+                                   Foreground="{StaticResource OutlineBrush}"
+                                   Text="Próximo paso: subir las copias de tus mundos a Drive con «Sincronizar ahora»."/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Errores (sin conexión, permiso revocado…) -->
+                <Border Padding="12" IsVisible="{Binding Cloud.ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
+                        Background="#33930000" CornerRadius="{StaticResource RadiusLg}">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <TextBlock Classes="icon" FontSize="18" Foreground="{StaticResource TertiaryBrush}" Text="error"/>
+                        <TextBlock Grid.Column="1" Margin="8,0,0,0" Classes="body-sm" TextWrapping="Wrap"
+                                   VerticalAlignment="Center"
+                                   Foreground="{StaticResource TertiaryBrush}" Text="{Binding Cloud.ErrorMessage}"/>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
 </UserControl>

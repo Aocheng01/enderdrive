@@ -122,20 +122,20 @@
                                            Foreground="{StaticResource PrimaryBrush}" Text="cloud_done"/>
                                 <TextBlock Classes="label-mono-sm" VerticalAlignment="Center"
                                            Foreground="{StaticResource OnSurfaceVariantBrush}"
-                                           Text="Almacenamiento en la nube"/>
+                                           Text="Almacenamiento en Google Drive"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
                                 <TextBlock Classes="label-mono-sm" Foreground="{StaticResource PrimaryBrush}"
-                                           Text="{Binding CloudUsageText}"/>
+                                           Text="{Binding Cloud.QuotaUsedText}"/>
                                 <TextBlock Classes="label-mono-sm" FontWeight="Normal"
                                            Foreground="{StaticResource OutlineBrush}"
-                                           Text="{Binding CloudQuotaText}"/>
+                                           Text="{Binding Cloud.QuotaLimitText}"/>
                             </StackPanel>
                         </Grid>
 
                         <!-- La barra y, encima, 10 segmentos como la barra de XP de Minecraft -->
                         <Panel>
-                            <ProgressBar Classes="xp" Maximum="100" Value="{Binding CloudPercent}"/>
+                            <ProgressBar Classes="xp" Maximum="100" Value="{Binding Cloud.QuotaPercent}"/>
                             <UniformGrid Columns="10" Rows="1" IsHitTestVisible="False" Margin="4,0">
                                 <Border BorderThickness="0,0,2,0" BorderBrush="#CC0E0E10"/>
                                 <Border BorderThickness="0,0,2,0" BorderBrush="#CC0E0E10"/>
@@ -157,7 +157,7 @@
                             CornerRadius="{StaticResource RadiusLg}">
                         <TextBlock Classes="label-mono-sm" FontWeight="Bold" HorizontalAlignment="Center"
                                    VerticalAlignment="Center" Foreground="{StaticResource PrimaryBrush}"
-                                   Text="{Binding CloudLevelText}"/>
+                                   Text="{Binding Cloud.QuotaLevelText}"/>
                     </Border>
                 </Grid>
             </Grid>

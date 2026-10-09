@@ -29,6 +29,7 @@ public partial class MyWorldsViewModel : ViewModelBase
     private readonly INavigationService _navigation;
     private readonly BackupsViewModel _backupsPage;
     private readonly ToastViewModel _toast;
+    private readonly CloudSessionViewModel _cloud;
 
     // Todos los mundos encontrados. "Worlds" es lo que se ve tras buscar/filtrar/ordenar.
     private List<WorldItemViewModel> _allWorlds = [];
@@ -74,11 +75,8 @@ public partial class MyWorldsViewModel : ViewModelBase
     [ObservableProperty]
     public partial string LastScanText { get; set; }
 
-    // Datos de prueba para la cuota de la nube (Fase 3: datos reales de Drive, igual que el menú lateral)
-    public string CloudUsageText => "34.2 GB";
-    public string CloudQuotaText => "/ 50 GB (68%)";
-    public double CloudPercent => 68.4;
-    public string CloudLevelText => "68";
+    /// <summary>Cuenta en la nube (para la barra de cuota del resumen).</summary>
+    public CloudSessionViewModel Cloud => _cloud;
 
     public bool IsEmpty => !IsLoading && Worlds.Count == 0;
     public bool HasSelection => SelectedWorld is not null;
@@ -98,7 +96,8 @@ public partial class MyWorldsViewModel : ViewModelBase
         IBackupService backupService,
         INavigationService navigation,
         BackupsViewModel backupsPage,
-        ToastViewModel toast)
+        ToastViewModel toast,
+        CloudSessionViewModel cloud)
     {
         _scanner = scanner;
         _folderPicker = folderPicker;
@@ -109,6 +108,7 @@ public partial class MyWorldsViewModel : ViewModelBase
         _navigation = navigation;
         _backupsPage = backupsPage;
         _toast = toast;
+        _cloud = cloud;
 
         // Si el usuario eligió una carpeta en otra sesión, la recuperamos
         SavesPath = _settings.Current.SavesPath ?? _scanner.DefaultSavesPath;

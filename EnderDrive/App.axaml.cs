@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.IO;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -6,6 +7,8 @@ using EnderDrive.ViewModels;
 using EnderDrive.ViewModels.Pages;
 using EnderDrive.Views;
 using Microsoft.Extensions.DependencyInjection;
+using EnderDrive.Cloud.GoogleDrive;
+using EnderDrive.Core.Cloud;
 using EnderDrive.Core.Services;
 using EnderDrive.Services;
 
@@ -13,6 +16,12 @@ namespace EnderDrive;
 
 public partial class App : Application
 {
+    /// <summary>
+    /// Credenciales OAuth de la app (las crea el desarrollador en Google Cloud Console).
+    /// Van junto al .exe y NO se suben a git: ver google-oauth.example.json.
+    /// </summary>
+    public const string GoogleCredentialsFileName = "google-oauth.json";
+
     public IServiceProvider Services { get; private set; } = null!;
 
     public override void Initialize()
@@ -30,6 +39,9 @@ public partial class App : Application
             {
                 DataContext = Services.GetRequiredService<MainViewModel>(),
             };
+
+            // Si el usuario ya conectó su cuenta otra vez, la recuperamos sin abrir el navegador
+            _ = Services.GetRequiredService<CloudSessionViewModel>().RestoreAsync();
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -44,6 +56,13 @@ public partial class App : Application
         services.AddSingleton<ISettingsService, JsonSettingsService>();
         services.AddSingleton<IBackupService, BackupService>();
 
+        // Nube: hoy Google Drive. Para usar otra nube bastaría con registrar otra ICloudProvider.
+        services.AddSingleton<ICloudProvider>(_ => new GoogleDriveProvider(
+            clientSecretsPath: Path.Combine(AppContext.BaseDirectory, GoogleCredentialsFileName),
+            tokenFolder: Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "EnderDrive", "google-drive")));
+
         // Servicios de la app (necesitan la ventana de Avalonia)
         services.AddSingleton<IFolderPicker, FolderPicker>();
         services.AddSingleton<IFolderLauncher, FolderLauncher>();
@@ -53,6 +72,7 @@ public partial class App : Application
 
         // ViewModels
         services.AddSingleton<ToastViewModel>();
+        services.AddSingleton<CloudSessionViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MyWorldsViewModel>();
         services.AddSingleton<CloudSyncViewModel>();

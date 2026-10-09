@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<!--
+  Página que ve el usuario en el navegador al terminar de iniciar sesión con Google.
+  La sirve el pequeño servidor local de la librería de Google (127.0.0.1), así que tiene que
+  ser autosuficiente: estilos dentro del archivo e iconos en SVG.
+  Si el usuario pulsa "Cancelar" en Google, la URL trae ?error=... y mostramos otra variante.
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EnderDrive · Google Drive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600&family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --background: #131315;
+    --surface-lowest: #0e0e10;
+    --surface-low: #1b1b1d;
+    --surface: #201f21;
+    --on-surface: #e5e1e4;
+    --on-surface-variant: #bbcabf;
+    --outline: #86948a;
+    --primary: #4edea3;
+    --primary-soft: rgba(78, 222, 163, 0.12);
+    --tertiary: #ffb3ad;
+    --tertiary-soft: rgba(255, 179, 173, 0.12);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: radial-gradient(circle at 50% 0%, #1d2a24 0%, var(--background) 55%);
+    color: var(--on-surface);
+    font-family: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .card {
+    width: 100%; max-width: 440px;
+    background: var(--surface-low);
+    border: 1px solid rgba(78, 222, 163, 0.25);
+    border-radius: 12px;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.55);
+    overflow: hidden;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 16px;
+    background: var(--surface-lowest);
+    font-weight: 600; font-size: 14px;
+  }
+  .brand .logo {
+    width: 22px; height: 22px; border-radius: 4px;
+    background: var(--surface); color: var(--primary);
+    display: grid; place-items: center;
+  }
+  .brand .tag {
+    font-family: "JetBrains Mono", Consolas, monospace; font-size: 10px;
+    color: var(--on-surface-variant); background: var(--surface);
+    padding: 1px 5px; border-radius: 2px;
+  }
+  .content { padding: 28px 24px 24px; text-align: center; }
+  .status {
+    width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--primary-soft); color: var(--primary);
+    box-shadow: 0 0 24px rgba(78, 222, 163, 0.25);
+  }
+  h1 {
+    font-family: "Space Grotesk", "Segoe UI", sans-serif;
+    font-size: 24px; line-height: 32px; margin: 0 0 8px; letter-spacing: -0.015em;
+  }
+  p { margin: 0; color: var(--on-surface-variant); font-size: 14px; line-height: 21px; }
+  .hint {
+    margin-top: 20px; padding: 10px 12px; border-radius: 6px;
+    background: var(--surface-lowest);
+    font-family: "JetBrains Mono", Consolas, monospace; font-size: 11px; color: var(--outline);
+  }
+  /* Variante de error: se activa con la clase "error" en <body> */
+  .error .card { border-color: rgba(255, 179, 173, 0.25); }
+  .error .status { background: var(--tertiary-soft); color: var(--tertiary); box-shadow: none; }
+  .only-error { display: none; }
+  .error .only-error { display: block; }
+  .error .only-ok { display: none; }
+</style>
+</head>
+<body>
+  <main class="card">
+    <div class="brand">
+      <div class="logo">
+        <!-- Cubo (como el icono "deployed_code" de la app) -->
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+          <path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/>
+        </svg>
+      </div>
+      EnderDrive <span class="tag">Google Drive</span>
+    </div>
+
+    <div class="content">
+      <div class="status">
+        <svg class="only-ok" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12.5l4.5 4.5L19 7.5"/>
+        </svg>
+        <svg class="only-error" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M6 6l12 12M18 6 6 18"/>
+        </svg>
+      </div>
+
+      <div class="only-ok">
+        <h1>¡Cuenta conectada!</h1>
+        <p>EnderDrive ya puede guardar las copias de tus mundos en tu Google Drive.</p>
+      </div>
+      <div class="only-error">
+        <h1>No se dio permiso</h1>
+        <p>Has cancelado el acceso, así que EnderDrive no se ha conectado. Puedes volver a intentarlo desde la app cuando quieras.</p>
+      </div>
+
+      <div class="hint">Ya puedes cerrar esta pestaña y volver a EnderDrive</div>
+    </div>
+  </main>
+
+  <script>
+    // Google añade ?error=access_denied a la URL si el usuario pulsa "Cancelar"
+    if (new URLSearchParams(location.search).has("error")) {
+      document.body.classList.add("error");
+      document.title = "EnderDrive · Sin permiso";
+    }
+  </script>
+</body>
+</html>

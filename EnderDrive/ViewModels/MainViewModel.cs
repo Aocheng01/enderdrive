@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using EnderDrive.Services;
@@ -19,10 +19,8 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>Aviso flotante de operaciones largas (copias, restauraciones…).</summary>
     public ToastViewModel Toast { get; }
 
-    // Datos de prueba para la tarjeta de capacidad (Fase 3: datos reales de Drive)
-    public string StorageText => "34.2 / 50 GB";
-    public double StoragePercent => 68.4;
-    public string SyncedWorldsText => "12 Mundos sincronizados";
+    /// <summary>Cuenta en la nube: alimenta la tarjeta "Capacidad Drive" y el avatar.</summary>
+    public CloudSessionViewModel Cloud { get; }
 
     public MainViewModel(
         MyWorldsViewModel myWorlds,
@@ -30,9 +28,11 @@ public partial class MainViewModel : ViewModelBase
         BackupsViewModel backups,
         SettingsViewModel settings,
         INavigationService navigation,
-        ToastViewModel toast)
+        ToastViewModel toast,
+        CloudSessionViewModel cloud)
     {
         Toast = toast;
+        Cloud = cloud;
 
         NavItems =
         [

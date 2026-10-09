@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\EnderDrive.Core\EnderDrive.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Apis.Drive.v3" Version="1.77.0.4276" />
+  </ItemGroup>
+
+  <!-- La página que ve el usuario al terminar de iniciar sesión va dentro de la .dll -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources/auth-complete.html" LogicalName="EnderDrive.AuthComplete.html" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

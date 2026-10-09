@@ -39,12 +39,20 @@
 
                 </StackPanel>
                 
-                <!-- Usuario -->
+                <!-- Usuario: la inicial si hay cuenta conectada, si no el icono de persona -->
                 <Border Grid.Column="2" Width="28" Height="28" CornerRadius="14"
-                        Background="{StaticResource PrimaryBrush}" VerticalAlignment="Center">
-                    <TextBlock Classes="icon" HorizontalAlignment="Center"
-                               Foreground="{StaticResource OnPrimaryBrush}"
-                               Text="person"/>
+                        Background="{StaticResource PrimaryBrush}" VerticalAlignment="Center"
+                        ToolTip.Tip="{Binding Cloud.SidebarSubtitle}">
+                    <Panel>
+                        <TextBlock Classes="icon" HorizontalAlignment="Center"
+                                   Foreground="{StaticResource OnPrimaryBrush}"
+                                   IsVisible="{Binding !Cloud.IsSignedIn}"
+                                   Text="person"/>
+                        <TextBlock Classes="title-sm" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="{StaticResource OnPrimaryBrush}"
+                                   IsVisible="{Binding Cloud.IsSignedIn}"
+                                   Text="{Binding Cloud.AvatarText}"/>
+                    </Panel>
                 </Border>
                 
             </Grid>
@@ -65,18 +73,18 @@
                                        Text= "Capacidad Drive"/>
                             <TextBlock Grid.Column="1" Classes="label-mono-sm" 
                                        Foreground="{StaticResource PrimaryBrush}" 
-                                       Text="{Binding StorageText}"/>
+                                       Text="{Binding Cloud.SidebarQuotaText}"/>
                         </Grid>
 
                         <!-- Barra -->
-                        <ProgressBar Value="{Binding StoragePercent}" Maximum="100" Height="8"
+                        <ProgressBar Value="{Binding Cloud.QuotaPercent}" Maximum="100" Height="8"
                                      Background="{StaticResource SurfaceLowestBrush}"
                                      Foreground="{StaticResource PrimaryContainerBrush}"/>
                    
                         <!-- Texto inferior -->
-                        <TextBlock Classes="body-sm"
+                        <TextBlock Classes="body-sm" TextTrimming="CharacterEllipsis"
                                    Foreground="{StaticResource OnSurfaceVariantBrush}"
-                                   Text="{Binding SyncedWorldsText}"/>
+                                   Text="{Binding Cloud.SidebarSubtitle}"/>
                     </StackPanel>
                 </Border>
 
