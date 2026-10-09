@@ -38,8 +38,10 @@ public interface ICloudProvider
     Task SignOutAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Sube una copia de seguridad (.zip) a la carpeta de su mundo en la nube.</summary>
+    /// <param name="fingerprint">Huella del mundo en el momento de la copia (ver WorldFingerprint).</param>
     Task<CloudBackup> UploadBackupAsync(
         BackupInfo backup,
+        string? fingerprint,
         IProgress<OperationProgress>? progress = null,
         CancellationToken cancellationToken = default);
 
@@ -52,13 +54,15 @@ public interface ICloudProvider
 
 /// <summary>Una copia de seguridad guardada en la nube.</summary>
 /// <param name="Id">Identificador del archivo en la nube.</param>
+/// <param name="Fingerprint">Huella del mundo al hacer la copia; null en copias antiguas.</param>
 public record CloudBackup(
     string Id,
     string WorldFolderName,
     string FileName,
     DateTime CreatedAt,
     long SizeBytes,
-    BackupReason Reason);
+    BackupReason Reason,
+    string? Fingerprint = null);
 
 /// <summary>La cuenta conectada.</summary>
 public record CloudAccount(string DisplayName, string Email, CloudQuota Quota);

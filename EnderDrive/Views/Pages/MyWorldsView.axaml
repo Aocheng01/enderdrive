@@ -93,9 +93,11 @@
                 BoxShadow="0 1 2 0 #40000000">
             <Grid ColumnDefinitions="*,Auto">
 
-                <!-- Izquierda: recuento y tamaño -->
-                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
+                <!-- Izquierda: recuento, tamaño, escaneo y sincronización.
+                     WrapPanel y no StackPanel: si no cabe en una línea, pasa a la siguiente
+                     en vez de montarse encima de la barra de la derecha -->
+                <WrapPanel VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,12,2">
                         <Ellipse Classes="pulse" Width="10" Height="10" VerticalAlignment="Center"
                                  Fill="{StaticResource PrimaryBrush}"/>
                         <TextBlock Classes="title-sm" VerticalAlignment="Center"
@@ -105,24 +107,32 @@
                         <TextBlock Classes="label-mono-md" VerticalAlignment="Center"
                                    Foreground="{StaticResource PrimaryBrush}" Text="{Binding TotalSizeText}"/>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="4">
+                    <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,2,12,2">
                         <TextBlock Classes="icon" FontSize="16"
                                    Foreground="{StaticResource PrimaryBrush}" Text="schedule"/>
                         <TextBlock Classes="body-sm" VerticalAlignment="Center"
                                    Foreground="{StaticResource OutlineBrush}" Text="{Binding LastScanText}"/>
                     </StackPanel>
-                </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,2,12,2"
+                                IsVisible="{Binding SyncSummaryText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <TextBlock Classes="icon" FontSize="16"
+                                   Foreground="{StaticResource PrimaryBrush}" Text="cloud_sync"/>
+                        <TextBlock Classes="body-sm" VerticalAlignment="Center"
+                                   Foreground="{StaticResource OutlineBrush}" Text="{Binding SyncSummaryText}"/>
+                    </StackPanel>
+                </WrapPanel>
 
                 <!-- Derecha: cuota de la nube con estilo de barra de experiencia -->
-                <Grid Grid.Column="1" Width="420" Margin="12,0,0,0" ColumnDefinitions="*,Auto">
+                <Grid Grid.Column="1" Width="360" Margin="12,0,0,0" ColumnDefinitions="*,Auto">
                     <StackPanel Spacing="4" VerticalAlignment="Center">
                         <Grid ColumnDefinitions="*,Auto">
                             <StackPanel Orientation="Horizontal" Spacing="4">
                                 <TextBlock Classes="icon" FontSize="12"
                                            Foreground="{StaticResource PrimaryBrush}" Text="cloud_done"/>
                                 <TextBlock Classes="label-mono-sm" VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"
                                            Foreground="{StaticResource OnSurfaceVariantBrush}"
-                                           Text="Almacenamiento en Google Drive"/>
+                                           Text="Google Drive"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
                                 <TextBlock Classes="label-mono-sm" Foreground="{StaticResource PrimaryBrush}"
@@ -213,7 +223,8 @@
                         </StackPanel>
                     </Button>
                     <Button Classes="emerald" IsEnabled="{Binding HasSelection}"
-                            Command="{Binding SyncNowCommand}"
+                            Command="{Binding SyncWorldCommand}"
+                            CommandParameter="{Binding SelectedWorld}"
                             ToolTip.Tip="Crear una copia del mundo y subirla a Google Drive">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Classes="icon" FontSize="17" Text="sync"/>
@@ -339,14 +350,22 @@
                                             </StackPanel>
                                         </StackPanel>
 
-                                        <!-- Estado de sincronización (Fase 3: estados reales) -->
-                                        <Border Classes="status-badge" Margin="0,4,0,0"
-                                                Background="{StaticResource SurfaceHighestBrush}">
+                                        <!-- Estado respecto a la nube. Los colores los ponen los estilos
+                                             .sync-badge / .synced / .pending (ver Controls.axaml) -->
+                                        <Border Classes="status-badge sync-badge" Margin="0,4,0,0"
+                                                Classes.synced="{Binding IsSynced}"
+                                                Classes.pending="{Binding HasPendingChanges}"
+                                                ToolTip.Tip="{Binding LastUploadText}">
                                             <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <Ellipse Width="6" Height="6" VerticalAlignment="Center"
+                                                         Fill="{StaticResource PrimaryBrush}"
+                                                         IsVisible="{Binding IsSynced}"/>
                                                 <TextBlock Classes="icon" FontSize="13"
-                                                           Foreground="{StaticResource OutlineBrush}" Text="cloud_off"/>
+                                                           IsVisible="{Binding HasPendingChanges}" Text="warning"/>
+                                                <TextBlock Classes="icon" FontSize="13"
+                                                           IsVisible="{Binding ShowEnableButton}" Text="cloud_off"/>
                                                 <TextBlock Classes="label-mono-sm" VerticalAlignment="Center"
-                                                           Foreground="{StaticResource OutlineBrush}" Text="Solo en local"/>
+                                                           Text="{Binding SyncBadgeText}"/>
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>
@@ -354,9 +373,13 @@
                                     <!-- Acciones -->
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4"
                                                 VerticalAlignment="Center">
-                                        <Button Classes="secondary" IsEnabled="False"
-                                                ToolTip.ShowOnDisabled="True"
-                                                ToolTip.Tip="Disponible con la sincronización en la nube">
+                                        <!-- El comando vive en MyWorldsViewModel (la página), no en el mundo:
+                                             subimos al ListBox para llegar a su DataContext y le pasamos
+                                             este mundo como parámetro -->
+                                        <Button Classes="secondary" IsVisible="{Binding ShowEnableButton}"
+                                                Command="{Binding $parent[ListBox].((vm:MyWorldsViewModel)DataContext).SyncWorldCommand}"
+                                                CommandParameter="{Binding}"
+                                                ToolTip.Tip="Subir este mundo a Google Drive">
                                             <StackPanel Orientation="Horizontal" Spacing="6">
                                                 <TextBlock Classes="icon" FontSize="16"
                                                            Foreground="{StaticResource PrimaryBrush}" Text="cloud_upload"/>
@@ -364,6 +387,26 @@
                                                            Text="Habilitar Cloud Sync"/>
                                             </StackPanel>
                                         </Button>
+                                        <Button Classes="warning" IsVisible="{Binding HasPendingChanges}"
+                                                Command="{Binding $parent[ListBox].((vm:MyWorldsViewModel)DataContext).SyncWorldCommand}"
+                                                CommandParameter="{Binding}"
+                                                ToolTip.Tip="Subir los cambios a Google Drive">
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Classes="icon" FontSize="16" Text="upload"/>
+                                                <TextBlock VerticalAlignment="Center" Text="Subir cambios"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <Border IsVisible="{Binding IsSynced}" Padding="12,0" Height="32"
+                                                CornerRadius="{StaticResource RadiusLg}"
+                                                Background="{StaticResource PrimarySoftBrush}"
+                                                ToolTip.Tip="{Binding LastUploadText}">
+                                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <TextBlock Classes="icon" FontSize="16"
+                                                           Foreground="{StaticResource PrimaryBrush}" Text="cloud_done"/>
+                                                <TextBlock Classes="title-sm" VerticalAlignment="Center"
+                                                           Foreground="{StaticResource PrimaryBrush}" Text="Al día"/>
+                                            </StackPanel>
+                                        </Border>
 
                                         <!-- Menú ⋮: el Flyout hereda el DataContext del botón (el mundo) -->
                                         <Button Classes="icon-button" ToolTip.Tip="Más opciones">

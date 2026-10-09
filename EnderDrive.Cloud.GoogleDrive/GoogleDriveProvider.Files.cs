@@ -27,12 +27,14 @@ public sealed partial class GoogleDriveProvider
     private const string WorldKey = "world";
     private const string CreatedAtKey = "createdAt";
     private const string ReasonKey = "reason";
+    private const string FingerprintKey = "fingerprint";
 
     // Ids de carpetas ya buscadas, para no preguntar a Drive en cada subida
     private readonly Dictionary<string, string> _folderIds = new();
 
     public async Task<CloudBackup> UploadBackupAsync(
         BackupInfo backup,
+        string? fingerprint,
         IProgress<OperationProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
@@ -53,6 +55,10 @@ public sealed partial class GoogleDriveProvider
                 [ReasonKey] = backup.Reason.ToString(),
             },
         };
+
+        // Drive limita cada etiqueta a 124 bytes (clave + valor); la huella ocupa 32 caracteres
+        if (fingerprint is not null)
+            metadata.AppProperties[FingerprintKey] = fingerprint;
 
         await using var stream = File.OpenRead(backup.FilePath);
         var total = stream.Length;
@@ -157,7 +163,9 @@ public sealed partial class GoogleDriveProvider
             ? parsedReason
             : BackupReason.Manual;
 
-        return new CloudBackup(file.Id, world, file.Name, createdAt, file.Size ?? 0, reason);
+        props.TryGetValue(FingerprintKey, out var fingerprint);
+
+        return new CloudBackup(file.Id, world, file.Name, createdAt, file.Size ?? 0, reason, fingerprint);
     }
 
     /// <summary>En las búsquedas de Drive, las comillas y barras del nombre hay que escaparlas.</summary>

@@ -35,6 +35,11 @@ namespace EnderDrive.ViewModels
         [ObservableProperty]
         public partial string? ErrorMessage { get; set; }
 
+        /// <summary>Lo calcula Mis Mundos al comparar los mundos con la nube (null = sin calcular).</summary>
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(SidebarSubtitle))]
+        public partial int? SyncedWorldsCount { get; set; }
+
         public bool IsSignedIn => Account is not null;
         public bool IsSignedOut => Account is null && !IsBusy && IsConfigured;
 
@@ -58,7 +63,11 @@ namespace EnderDrive.ViewModels
             ? $"{Formatters.Size(Account.Quota.UsedBytes)} / {Formatters.Size(limit)}"
             : Account is null ? "—" : Formatters.Size(Account.Quota.UsedBytes);
 
-        public string SidebarSubtitle => Account is null ? $"{_provider.DisplayName} sin conectar" : Account.Email;
+        public string SidebarSubtitle => Account is null ? $"{_provider.DisplayName} sin conectar"
+            : SyncedWorldsCount is { } count ? (count == 1 ? "1 mundo sincronizado" : $"{count} mundos sincronizados")
+            : Account.Email;
+
+        public string AvatarTooltip => Account is null ? $"{_provider.DisplayName} sin conectar" : Account.Email;
 
         public CloudSessionViewModel(ICloudProvider provider)
         {
@@ -157,6 +166,7 @@ namespace EnderDrive.ViewModels
 
             // Todas estas propiedades se calculan a partir de Account
             OnPropertyChanged(nameof(IsSignedIn));
+            OnPropertyChanged(nameof(AvatarTooltip));
             OnPropertyChanged(nameof(DisplayName));
             OnPropertyChanged(nameof(Email));
             OnPropertyChanged(nameof(QuotaUsedText));

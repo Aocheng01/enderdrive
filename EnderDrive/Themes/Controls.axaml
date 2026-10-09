@@ -325,6 +325,28 @@
     <Setter Property="HorizontalAlignment" Value="Left"/>
   </Style>
 
+  <!-- ===== Insignia del estado de un mundo respecto a la nube ===== -->
+  <Style Selector="Border.sync-badge">
+    <Setter Property="Background" Value="{StaticResource SurfaceHighestBrush}"/>
+  </Style>
+  <Style Selector="Border.sync-badge TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource OutlineBrush}"/>
+  </Style>
+  <!-- Sincronizado: verde (como "Sincronizado con la nube" del diseño) -->
+  <Style Selector="Border.sync-badge.synced">
+    <Setter Property="Background" Value="{StaticResource PrimarySoftBrush}"/>
+  </Style>
+  <Style Selector="Border.sync-badge.synced TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+  </Style>
+  <!-- Cambios pendientes: ámbar -->
+  <Style Selector="Border.sync-badge.pending">
+    <Setter Property="Background" Value="#33EE9800"/>
+  </Style>
+  <Style Selector="Border.sync-badge.pending TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource SecondaryBrush}"/>
+  </Style>
+
   <!-- ===== Punto verde que "late" (estado activo) ===== -->
   <Style Selector="Ellipse.pulse">
     <Style.Animations>

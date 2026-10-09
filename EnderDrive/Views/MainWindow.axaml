@@ -42,7 +42,7 @@
                 <!-- Usuario: la inicial si hay cuenta conectada, si no el icono de persona -->
                 <Border Grid.Column="2" Width="28" Height="28" CornerRadius="14"
                         Background="{StaticResource PrimaryBrush}" VerticalAlignment="Center"
-                        ToolTip.Tip="{Binding Cloud.SidebarSubtitle}">
+                        ToolTip.Tip="{Binding Cloud.AvatarTooltip}">
                     <Panel>
                         <TextBlock Classes="icon" HorizontalAlignment="Center"
                                    Foreground="{StaticResource OnPrimaryBrush}"

@@ -21,12 +21,13 @@ public sealed class FakeCloudProvider : ICloudProvider
     public bool IsSignedIn { get; set; } = true;
 
     public Task<CloudBackup> UploadBackupAsync(
-        BackupInfo backup, IProgress<OperationProgress>? progress = null, CancellationToken cancellationToken = default)
+        BackupInfo backup, string? fingerprint, IProgress<OperationProgress>? progress = null,
+        CancellationToken cancellationToken = default)
     {
         progress?.Report(new OperationProgress("Subiendo", backup.SizeBytes, backup.SizeBytes));
 
         var uploaded = new CloudBackup($"id-{_nextId++}", backup.WorldFolderName, Path.GetFileName(backup.FilePath),
-            backup.CreatedAt, backup.SizeBytes, backup.Reason);
+            backup.CreatedAt, backup.SizeBytes, backup.Reason, fingerprint);
         Files.Add(uploaded);
         UploadedPaths.Add(backup.FilePath);
         return Task.FromResult(uploaded);

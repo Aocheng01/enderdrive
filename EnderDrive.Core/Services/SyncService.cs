@@ -3,6 +3,23 @@ using EnderDrive.Core.Models;
 
 namespace EnderDrive.Core.Services;
 
+/// <summary>Estado de un mundo respecto a la nube.</summary>
+public enum SyncState
+{
+    /// <summary>Nunca se ha subido.</summary>
+    LocalOnly,
+
+    /// <summary>La última copia subida es igual al mundo actual.</summary>
+    Synced,
+
+    /// <summary>El mundo ha cambiado desde la última subida.</summary>
+    PendingChanges,
+}
+
+/// <param name="LastUpload">La copia más reciente de este mundo en la nube (null si no hay).</param>
+/// <param name="PendingBytes">Lo que ocupan los archivos modificados desde la última subida.</param>
+public record WorldSyncStatus(SyncState State, CloudBackup? LastUpload, long PendingBytes);
+
 public interface ISyncService
 {
     /// <summary>
@@ -13,6 +30,15 @@ public interface ISyncService
     Task<CloudBackup> UploadWorldAsync(
         string worldFolder,
         IProgress<OperationProgress>? progress = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Compara el mundo con su copia más reciente en la nube.
+    /// </summary>
+    /// <param name="cloudBackups">La lista de la nube (se pide una vez y se reutiliza para todos los mundos).</param>
+    Task<WorldSyncStatus> GetStatusAsync(
+        string worldFolder,
+        IReadOnlyList<CloudBackup> cloudBackups,
         CancellationToken cancellationToken = default);
 }
 
@@ -34,17 +60,46 @@ public sealed class SyncService(
         if (!cloud.IsSignedIn)
             throw new CloudException($"No hay ninguna cuenta de {cloud.DisplayName} conectada.");
 
-        // 1. Copia local: también queda en el historial de Copias de Seguridad
+        // 1. Huella del mundo tal como está ahora (la copia se hace justo después,
+        //    y CreateBackupAsync ya comprueba que Minecraft no lo tenga abierto)
+        var fingerprint = await Task.Run(() => WorldFingerprint.Compute(worldFolder), cancellationToken);
+
+        // 2. Copia local: también queda en el historial de Copias de Seguridad
         var backup = await backups.CreateBackupAsync(worldFolder, BackupReason.Manual, progress, cancellationToken);
 
-        // 2. Subida
-        var uploaded = await cloud.UploadBackupAsync(backup, progress, cancellationToken);
+        // 3. Subida, con la huella como etiqueta
+        var uploaded = await cloud.UploadBackupAsync(backup, fingerprint, progress, cancellationToken);
 
-        // 3. En la nube guardamos el mismo número de copias por mundo que en local
+        // 4. En la nube guardamos el mismo número de copias por mundo que en local
         await PruneCloudBackupsAsync(uploaded, cancellationToken);
 
         return uploaded;
     }
+
+    public Task<WorldSyncStatus> GetStatusAsync(
+        string worldFolder,
+        IReadOnlyList<CloudBackup> cloudBackups,
+        CancellationToken cancellationToken = default)
+        => Task.Run(() =>
+        {
+            var worldName = Path.GetFileName(Path.TrimEndingDirectorySeparator(worldFolder));
+
+            // Comparamos con la copia más reciente de ESTE mundo (por nombre de carpeta)
+            var lastUpload = cloudBackups
+                .Where(b => b.WorldFolderName == worldName)
+                .MaxBy(b => b.CreatedAt);
+
+            if (lastUpload is null)
+                return new WorldSyncStatus(SyncState.LocalOnly, null, 0);
+
+            if (lastUpload.Fingerprint is not null
+                && lastUpload.Fingerprint == WorldFingerprint.Compute(worldFolder))
+                return new WorldSyncStatus(SyncState.Synced, lastUpload, 0);
+
+            // Distinta (o copia antigua sin huella): calculamos cuánto ha cambiado
+            var pending = WorldFingerprint.ChangedBytesSince(worldFolder, lastUpload.CreatedAt);
+            return new WorldSyncStatus(SyncState.PendingChanges, lastUpload, pending);
+        }, cancellationToken);
 
     private async Task PruneCloudBackupsAsync(CloudBackup justUploaded, CancellationToken cancellationToken)
     {

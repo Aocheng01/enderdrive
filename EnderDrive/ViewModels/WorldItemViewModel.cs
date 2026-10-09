@@ -2,6 +2,7 @@ using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EnderDrive.Core.Models;
+using EnderDrive.Core.Services;
 using EnderDrive.Services;
 using System;
 using System.Globalization;
@@ -45,6 +46,49 @@ namespace EnderDrive.ViewModels
 
         public Bitmap? Icon { get; }
         public bool HasIcon => Icon is not null;
+
+        // ===== Estado respecto a la nube =====
+
+        /// <summary>null = no se sabe (sin cuenta conectada o todavía comprobando).</summary>
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsSynced), nameof(HasPendingChanges), nameof(ShowEnableButton), nameof(SyncBadgeText))]
+        public partial SyncState? SyncState { get; set; }
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(SyncBadgeText))]
+        public partial bool IsCheckingSync { get; set; }
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(SyncBadgeText))]
+        public partial long PendingBytes { get; set; }
+
+        [ObservableProperty]
+        public partial string? LastUploadText { get; set; }
+
+        public bool IsSynced => SyncState == Core.Services.SyncState.Synced;
+        public bool HasPendingChanges => SyncState == Core.Services.SyncState.PendingChanges;
+
+        /// <summary>"Habilitar Cloud Sync": cuando nunca se subió o no sabemos el estado.</summary>
+        public bool ShowEnableButton => !IsSynced && !HasPendingChanges;
+
+        public string SyncBadgeText => IsCheckingSync ? "Comprobando la nube…" : SyncState switch
+        {
+            Core.Services.SyncState.Synced => "Sincronizado con la nube",
+            Core.Services.SyncState.PendingChanges => $"Cambios locales pendientes ({Formatters.Size(PendingBytes)})",
+            Core.Services.SyncState.LocalOnly => "Solo en local",
+            _ => "Nube sin conectar",
+        };
+
+        /// <summary>Aplica el resultado de comparar el mundo con la nube.</summary>
+        public void ApplySyncStatus(WorldSyncStatus? status)
+        {
+            IsCheckingSync = false;
+            SyncState = status?.State;
+            PendingBytes = status?.PendingBytes ?? 0;
+            LastUploadText = status?.LastUpload is { } last
+                ? $"Última subida: {Formatters.RelativeDate(last.CreatedAt)}"
+                : null;
+        }
 
         public WorldItemViewModel(WorldInfo world, IFolderLauncher folderLauncher, IClipboardService clipboard)
         {

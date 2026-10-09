@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -33,6 +34,10 @@ public partial class MyWorldsViewModel : ViewModelBase
     private readonly CloudSessionViewModel _cloud;
     private readonly ISyncService _sync;
     private readonly CloudSyncViewModel _cloudPage;
+    private readonly ICloudProvider _cloudProvider;
+
+    // Si se pide comprobar la nube dos veces seguidas, solo vale el resultado de la última
+    private int _syncCheckVersion;
 
     // Todos los mundos encontrados. "Worlds" es lo que se ve tras buscar/filtrar/ordenar.
     private List<WorldItemViewModel> _allWorlds = [];
@@ -78,6 +83,10 @@ public partial class MyWorldsViewModel : ViewModelBase
     [ObservableProperty]
     public partial string LastScanText { get; set; }
 
+    /// <summary>"3 de 5 sincronizados" (vacío si no hay cuenta conectada).</summary>
+    [ObservableProperty]
+    public partial string SyncSummaryText { get; set; } = "";
+
     /// <summary>Cuenta en la nube (para la barra de cuota del resumen).</summary>
     public CloudSessionViewModel Cloud => _cloud;
 
@@ -102,7 +111,8 @@ public partial class MyWorldsViewModel : ViewModelBase
         ToastViewModel toast,
         CloudSessionViewModel cloud,
         ISyncService sync,
-        CloudSyncViewModel cloudPage)
+        CloudSyncViewModel cloudPage,
+        ICloudProvider cloudProvider)
     {
         _scanner = scanner;
         _folderPicker = folderPicker;
@@ -116,6 +126,10 @@ public partial class MyWorldsViewModel : ViewModelBase
         _cloud = cloud;
         _sync = sync;
         _cloudPage = cloudPage;
+        _cloudProvider = cloudProvider;
+
+        // Al conectar o desconectar la cuenta, volvemos a comprobar el estado de los mundos
+        _cloud.PropertyChanged += OnCloudPropertyChanged;
 
         // Si el usuario eligió una carpeta en otra sesión, la recuperamos
         SavesPath = _settings.Current.SavesPath ?? _scanner.DefaultSavesPath;
@@ -178,10 +192,14 @@ public partial class MyWorldsViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// Sube un mundo. Lo usan "Sincronizar ahora" (con el mundo seleccionado) y los botones
+    /// de cada tarjeta ("Habilitar Cloud Sync", "Subir cambios"), que pasan su propio mundo.
+    /// </summary>
     [RelayCommand]
-    private async Task SyncNowAsync()
+    private async Task SyncWorldAsync(WorldItemViewModel? world)
     {
-        if (SelectedWorld is not { } world)
+        if (world is null)
             return;
 
         // Sin cuenta conectada, llevamos al usuario a conectarla
@@ -198,6 +216,10 @@ public partial class MyWorldsViewModel : ViewModelBase
             var uploaded = await _sync.UploadWorldAsync(world.FolderPath, progress);
             _toast.Succeed($"Subido a {_cloud.ProviderName} ({Formatters.Size(uploaded.SizeBytes)})");
             _cloud.RefreshCommand.Execute(null); // el espacio usado ha cambiado
+
+            // Lo acabamos de subir: está sincronizado
+            world.ApplySyncStatus(new WorldSyncStatus(SyncState.Synced, uploaded, 0));
+            UpdateSyncSummary();
         }
         catch (Exception e) when (e is CloudException or IOException or UnauthorizedAccessException)
         {
@@ -244,6 +266,62 @@ public partial class MyWorldsViewModel : ViewModelBase
             SelectedWorld = Worlds.FirstOrDefault(w => w.FolderPath == previousSelection)
                 ?? Worlds.FirstOrDefault();
         }
+
+        // Segunda fase: la lista ya se ve; ahora comparamos cada mundo con la nube
+        await CheckSyncStatusAsync();
+    }
+
+    /// <summary>Pide la lista de la nube una sola vez y calcula el estado de cada mundo.</summary>
+    private async Task CheckSyncStatusAsync()
+    {
+        var version = ++_syncCheckVersion;
+        var worlds = _allWorlds;
+
+        if (!_cloud.IsSignedIn)
+        {
+            foreach (var world in worlds)
+                world.ApplySyncStatus(null); // "Nube sin conectar"
+            UpdateSyncSummary();
+            return;
+        }
+
+        foreach (var world in worlds)
+            world.IsCheckingSync = true;
+
+        try
+        {
+            var cloudBackups = await _cloudProvider.ListBackupsAsync();
+            foreach (var world in worlds)
+            {
+                var status = await _sync.GetStatusAsync(world.FolderPath, cloudBackups);
+                if (version != _syncCheckVersion)
+                    return; // ha empezado otra comprobación más reciente
+
+                world.ApplySyncStatus(status);
+            }
+        }
+        catch (Exception e) when (e is CloudException or IOException or UnauthorizedAccessException)
+        {
+            foreach (var world in worlds)
+                world.ApplySyncStatus(null);
+            _toast.Fail($"No se pudo comprobar la nube: {e.Message}");
+        }
+
+        UpdateSyncSummary();
+    }
+
+    private void OnCloudPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // Solo nos interesa cuando cambia la cuenta (conectar/desconectar), no la cuota
+        if (e.PropertyName == nameof(CloudSessionViewModel.IsSignedIn))
+            _ = CheckSyncStatusAsync();
+    }
+
+    private void UpdateSyncSummary()
+    {
+        var synced = _allWorlds.Count(w => w.IsSynced);
+        SyncSummaryText = _cloud.IsSignedIn ? $"{synced} de {_allWorlds.Count} sincronizados" : "";
+        _cloud.SyncedWorldsCount = _cloud.IsSignedIn ? synced : null;
     }
 
     private void ApplyFilter()
