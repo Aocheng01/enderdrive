@@ -15,8 +15,10 @@ namespace EnderDrive.Cloud.GoogleDrive;
 /// <item>Google devuelve un código a un pequeño servidor local (127.0.0.1) que abre la librería.</item>
 /// <item>Ese código se cambia por un token, que guardamos para no pedir permiso cada vez.</item>
 /// </list>
+/// Este archivo tiene el inicio de sesión; la subida y lista de copias está en
+/// GoogleDriveProvider.Files.cs (las dos partes forman una sola clase gracias a "partial").
 /// </summary>
-public sealed class GoogleDriveProvider : ICloudProvider
+public sealed partial class GoogleDriveProvider : ICloudProvider
 {
     // Clave con la que se guarda el token. Solo hay una cuenta conectada a la vez.
     private const string UserKey = "user";
@@ -43,6 +45,8 @@ public sealed class GoogleDriveProvider : ICloudProvider
     public string DisplayName => "Google Drive";
 
     public bool IsConfigured => File.Exists(_clientSecretsPath);
+
+    public bool IsSignedIn => _drive is not null;
 
     public async Task<CloudAccount?> RestoreSessionAsync(CancellationToken cancellationToken = default)
     {
@@ -86,7 +90,7 @@ public sealed class GoogleDriveProvider : ICloudProvider
 
     public async Task<CloudAccount> GetAccountAsync(CancellationToken cancellationToken = default)
     {
-        var drive = _drive ?? throw new InvalidOperationException("No hay ninguna sesión iniciada.");
+        var drive = RequireDrive();
 
         // "about" devuelve datos de la cuenta. Con Fields pedimos solo lo que necesitamos.
         var request = drive.About.Get();
@@ -116,6 +120,12 @@ public sealed class GoogleDriveProvider : ICloudProvider
 
         await ForgetSessionAsync();
     }
+
+    private DriveService RequireDrive()
+        => _drive ?? throw new CloudException("No hay ninguna cuenta de Google Drive conectada.");
+
+    private static Task Translate(Func<Task> action)
+        => Translate(async () => { await action(); return true; });
 
     /// <summary>Convierte los errores de Google en CloudException (ver ICloudProvider).</summary>
     private static async Task<T> Translate<T>(Func<Task<T>> action)
@@ -154,6 +164,7 @@ public sealed class GoogleDriveProvider : ICloudProvider
         _drive?.Dispose();
         _drive = null;
         _credential = null;
+        _folderIds.Clear();
         await _tokenStore.ClearAsync();
     }
 

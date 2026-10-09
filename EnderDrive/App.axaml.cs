@@ -57,6 +57,7 @@ public partial class App : Application
         services.AddSingleton<IBackupService, BackupService>();
 
         // Nube: hoy Google Drive. Para usar otra nube bastaría con registrar otra ICloudProvider.
+        services.AddSingleton<ISyncService, SyncService>();
         services.AddSingleton<ICloudProvider>(_ => new GoogleDriveProvider(
             clientSecretsPath: Path.Combine(AppContext.BaseDirectory, GoogleCredentialsFileName),
             tokenFolder: Path.Combine(

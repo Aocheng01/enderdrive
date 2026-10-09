@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using EnderDrive.Core.Cloud;
 using EnderDrive.Core.Models;
 using EnderDrive.Core.Services;
 using EnderDrive.Services;
@@ -30,6 +31,8 @@ public partial class MyWorldsViewModel : ViewModelBase
     private readonly BackupsViewModel _backupsPage;
     private readonly ToastViewModel _toast;
     private readonly CloudSessionViewModel _cloud;
+    private readonly ISyncService _sync;
+    private readonly CloudSyncViewModel _cloudPage;
 
     // Todos los mundos encontrados. "Worlds" es lo que se ve tras buscar/filtrar/ordenar.
     private List<WorldItemViewModel> _allWorlds = [];
@@ -97,7 +100,9 @@ public partial class MyWorldsViewModel : ViewModelBase
         INavigationService navigation,
         BackupsViewModel backupsPage,
         ToastViewModel toast,
-        CloudSessionViewModel cloud)
+        CloudSessionViewModel cloud,
+        ISyncService sync,
+        CloudSyncViewModel cloudPage)
     {
         _scanner = scanner;
         _folderPicker = folderPicker;
@@ -109,6 +114,8 @@ public partial class MyWorldsViewModel : ViewModelBase
         _backupsPage = backupsPage;
         _toast = toast;
         _cloud = cloud;
+        _sync = sync;
+        _cloudPage = cloudPage;
 
         // Si el usuario eligió una carpeta en otra sesión, la recuperamos
         SavesPath = _settings.Current.SavesPath ?? _scanner.DefaultSavesPath;
@@ -167,6 +174,33 @@ public partial class MyWorldsViewModel : ViewModelBase
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             // Incluye WorldInUseException: el mundo está abierto en Minecraft
+            _toast.Fail(e.Message);
+        }
+    }
+
+    [RelayCommand]
+    private async Task SyncNowAsync()
+    {
+        if (SelectedWorld is not { } world)
+            return;
+
+        // Sin cuenta conectada, llevamos al usuario a conectarla
+        if (!_cloud.IsSignedIn)
+        {
+            _toast.Fail($"Conecta tu cuenta de {_cloud.ProviderName} para sincronizar.");
+            _navigation.NavigateTo(_cloudPage);
+            return;
+        }
+
+        var progress = _toast.Start($"Sincronizando con {_cloud.ProviderName}", world.Name);
+        try
+        {
+            var uploaded = await _sync.UploadWorldAsync(world.FolderPath, progress);
+            _toast.Succeed($"Subido a {_cloud.ProviderName} ({Formatters.Size(uploaded.SizeBytes)})");
+            _cloud.RefreshCommand.Execute(null); // el espacio usado ha cambiado
+        }
+        catch (Exception e) when (e is CloudException or IOException or UnauthorizedAccessException)
+        {
             _toast.Fail(e.Message);
         }
     }

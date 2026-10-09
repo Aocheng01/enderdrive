@@ -179,9 +179,69 @@
                             <ProgressBar Classes="xp" Maximum="100" Value="{Binding Cloud.QuotaPercent}"/>
                         </StackPanel>
 
-                        <TextBlock Classes="body-sm" TextWrapping="Wrap"
-                                   Foreground="{StaticResource OutlineBrush}"
-                                   Text="Próximo paso: subir las copias de tus mundos a Drive con «Sincronizar ahora»."/>
+                    </StackPanel>
+                </Border>
+
+                <!-- ===== COPIAS EN LA NUBE (solo con la cuenta conectada) ===== -->
+                <Border Padding="16" IsVisible="{Binding Cloud.IsSignedIn}"
+                        Background="{StaticResource SurfaceLowBrush}"
+                        CornerRadius="{StaticResource RadiusXl}">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Spacing="2">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Classes="icon" Foreground="{StaticResource PrimaryBrush}" Text="cloud_done"/>
+                                    <TextBlock Classes="title-lg" VerticalAlignment="Center"
+                                               Foreground="{StaticResource OnSurfaceBrush}" Text="Copias en Google Drive"/>
+                                </StackPanel>
+                                <TextBlock Classes="label-mono-sm" Foreground="{StaticResource OutlineBrush}"
+                                           Text="{Binding CloudBackupsSummary}"/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="toolbar" VerticalAlignment="Top"
+                                    Command="{Binding LoadBackupsCommand}" ToolTip.Tip="Actualizar">
+                                <TextBlock Classes="icon" FontSize="16" Text="refresh"/>
+                            </Button>
+                        </Grid>
+
+                        <ProgressBar IsIndeterminate="True" Height="4" IsVisible="{Binding IsLoadingBackups}"
+                                     Foreground="{StaticResource PrimaryBrush}"/>
+
+                        <!-- Vacío -->
+                        <Border Padding="12" IsVisible="{Binding HasNoCloudBackups}"
+                                Background="{StaticResource SurfaceLowestBrush}"
+                                CornerRadius="{StaticResource RadiusLg}">
+                            <TextBlock Classes="body-sm" TextWrapping="Wrap"
+                                       Foreground="{StaticResource OnSurfaceVariantBrush}"
+                                       Text="Aún no has subido ninguna copia. En Mis Mundos, selecciona un mundo y pulsa «Sincronizar ahora»."/>
+                        </Border>
+
+                        <!-- Lista -->
+                        <ItemsControl ItemsSource="{Binding CloudBackups}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:CloudBackupItemViewModel">
+                                    <Border Margin="0,0,0,6" Padding="10,8"
+                                            Background="{StaticResource SurfaceBrush}"
+                                            CornerRadius="{StaticResource RadiusLg}">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <TextBlock Classes="icon" FontSize="20"
+                                                       Foreground="{StaticResource PrimaryBrush}" Text="cloud"/>
+                                            <StackPanel Grid.Column="1" Margin="10,0" Spacing="2">
+                                                <TextBlock Classes="title-sm" Foreground="{StaticResource OnSurfaceBrush}"
+                                                           Text="{Binding WorldName}"/>
+                                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                                    <TextBlock Classes="body-sm" Foreground="{StaticResource OnSurfaceVariantBrush}"
+                                                               Text="{Binding DateText}"/>
+                                                    <TextBlock Classes="body-sm" Foreground="{StaticResource OnSurfaceVariantBrush}"
+                                                               Text="{Binding SizeText}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2" Classes="label-mono-sm" VerticalAlignment="Center"
+                                                       Foreground="{StaticResource OutlineBrush}" Text="{Binding FileName}"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                 </Border>
 

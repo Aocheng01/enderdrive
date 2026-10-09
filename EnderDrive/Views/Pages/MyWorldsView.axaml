@@ -212,9 +212,9 @@
                             <TextBlock VerticalAlignment="Center" Text="Restaurar versión"/>
                         </StackPanel>
                     </Button>
-                    <!-- Fase 3 (sincronización con la nube) -->
-                    <Button Classes="emerald" IsEnabled="False"
-                            ToolTip.ShowOnDisabled="True" ToolTip.Tip="Disponible con la sincronización en la nube">
+                    <Button Classes="emerald" IsEnabled="{Binding HasSelection}"
+                            Command="{Binding SyncNowCommand}"
+                            ToolTip.Tip="Crear una copia del mundo y subirla a Google Drive">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Classes="icon" FontSize="17" Text="sync"/>
                             <TextBlock VerticalAlignment="Center" Text="Sincronizar ahora"/>

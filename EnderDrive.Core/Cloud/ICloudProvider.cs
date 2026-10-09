@@ -1,3 +1,5 @@
+using EnderDrive.Core.Models;
+
 namespace EnderDrive.Core.Cloud;
 
 /// <summary>
@@ -16,6 +18,9 @@ public interface ICloudProvider
     /// <summary>false si faltan las credenciales de la app (el archivo de OAuth del desarrollador).</summary>
     bool IsConfigured { get; }
 
+    /// <summary>true si hay una sesión iniciada.</summary>
+    bool IsSignedIn { get; }
+
     /// <summary>
     /// Recupera la sesión guardada de una vez anterior, sin abrir el navegador.
     /// Devuelve null si no hay sesión o si ha caducado.
@@ -31,7 +36,29 @@ public interface ICloudProvider
 
     /// <summary>Cierra la sesión, revoca el permiso y borra el token guardado.</summary>
     Task SignOutAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Sube una copia de seguridad (.zip) a la carpeta de su mundo en la nube.</summary>
+    Task<CloudBackup> UploadBackupAsync(
+        BackupInfo backup,
+        IProgress<OperationProgress>? progress = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Todas las copias subidas por EnderDrive, de la más reciente a la más antigua.</summary>
+    Task<IReadOnlyList<CloudBackup>> ListBackupsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Quita una copia de la nube (a la papelera, si la nube la tiene).</summary>
+    Task DeleteBackupAsync(CloudBackup backup, CancellationToken cancellationToken = default);
 }
+
+/// <summary>Una copia de seguridad guardada en la nube.</summary>
+/// <param name="Id">Identificador del archivo en la nube.</param>
+public record CloudBackup(
+    string Id,
+    string WorldFolderName,
+    string FileName,
+    DateTime CreatedAt,
+    long SizeBytes,
+    BackupReason Reason);
 
 /// <summary>La cuenta conectada.</summary>
 public record CloudAccount(string DisplayName, string Email, CloudQuota Quota);
