@@ -66,9 +66,7 @@ public sealed class BackupService(ISettingsService settings) : IBackupService
             if (!Directory.Exists(BackupsPath))
                 return [];
 
-            return Directory.EnumerateDirectories(BackupsPath)
-                .SelectMany(ListWorldBackups)
-                .OrderByDescending(b => b.CreatedAt)
+            return NewestFirst(Directory.EnumerateDirectories(BackupsPath).SelectMany(ListWorldBackups))
                 .ToList();
         }, cancellationToken);
 
@@ -274,14 +272,22 @@ public sealed class BackupService(ISettingsService settings) : IBackupService
     {
         var max = Math.Max(1, settings.Current.MaxBackupsPerWorld);
 
-        var toDelete = ListWorldBackups(worldBackupsFolder)
-            .OrderByDescending(b => b.CreatedAt)
+        var toDelete = NewestFirst(ListWorldBackups(worldBackupsFolder))
             .Skip(max)
             .Where(b => !keep.Contains(b.FilePath, StringComparer.OrdinalIgnoreCase));
 
         foreach (var old in toDelete)
             TryDeleteFile(old.FilePath);
     }
+
+    /// <summary>
+    /// De la más reciente a la más antigua. El nombre solo guarda hasta los segundos, así que si
+    /// hay dos copias del mismo segundo desempatamos con la hora exacta de escritura del archivo.
+    /// </summary>
+    private static IOrderedEnumerable<BackupInfo> NewestFirst(IEnumerable<BackupInfo> backups)
+        => backups
+            .OrderByDescending(b => b.CreatedAt)
+            .ThenByDescending(b => File.GetLastWriteTimeUtc(b.FilePath));
 
     private static IEnumerable<BackupInfo> ListWorldBackups(string worldBackupsFolder)
     {
