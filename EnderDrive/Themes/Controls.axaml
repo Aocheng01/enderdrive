@@ -362,6 +362,24 @@
     <Setter Property="Foreground" Value="{StaticResource TertiaryBrush}"/>
   </Style>
 
+  <!-- Abierto en Minecraft: ámbar suave (no se puede subir ni bajar mientras tanto) -->
+  <Style Selector="Border.sync-badge.inuse">
+    <Setter Property="Background" Value="#33FFB95F"/>
+  </Style>
+  <Style Selector="Border.sync-badge.inuse TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource SecondaryFixedBrush}"/>
+  </Style>
+
+  <!-- ===== Interruptores (ToggleSwitch) en verde en lugar del azul de Windows ===== -->
+  <Style Selector="ToggleSwitch:checked /template/ Border#SwitchKnobBounds">
+    <Setter Property="Background" Value="{StaticResource PrimaryContainerBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource PrimaryContainerBrush}"/>
+  </Style>
+  <Style Selector="ToggleSwitch:checked:pointerover /template/ Border#SwitchKnobBounds">
+    <Setter Property="Background" Value="#2ECC94"/>
+    <Setter Property="BorderBrush" Value="#2ECC94"/>
+  </Style>
+
   <!-- ===== Punto verde que "late" (estado activo) ===== -->
   <Style Selector="Ellipse.pulse">
     <Style.Animations>

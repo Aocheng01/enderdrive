@@ -30,6 +30,45 @@
         <ScrollViewer>
             <StackPanel Spacing="12">
 
+                <!-- ===== SECCIÓN: SINCRONIZACIÓN AUTOMÁTICA ===== -->
+                <Border Padding="16" Background="{StaticResource SurfaceLowBrush}"
+                        CornerRadius="{StaticResource RadiusXl}">
+                    <StackPanel Spacing="16">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Classes="icon" Foreground="{StaticResource PrimaryBrush}" Text="cloud_sync"/>
+                            <TextBlock Classes="title-lg" VerticalAlignment="Center"
+                                       Foreground="{StaticResource OnSurfaceBrush}" Text="Sincronización automática"/>
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Spacing="2">
+                                <TextBlock Classes="title-sm" Foreground="{StaticResource OnSurfaceBrush}"
+                                           Text="Subir los cambios al salir de un mundo"/>
+                                <TextBlock Classes="body-sm" TextWrapping="Wrap"
+                                           Foreground="{StaticResource OnSurfaceVariantBrush}"
+                                           Text="Cuando sales de un mundo en Minecraft, EnderDrive sube sus cambios a Google Drive. Solo para mundos que ya están en la nube."/>
+                            </StackPanel>
+                            <!-- OnContent/OffContent vacíos: sin el texto "On/Off" de Fluent -->
+                            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" OnContent="" OffContent=""
+                                          IsChecked="{Binding AutoUploadOnWorldClose}"/>
+                        </Grid>
+
+                        <Border Height="1" Background="{StaticResource OutlineVariantBrush}" Opacity="0.5"/>
+
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Spacing="2">
+                                <TextBlock Classes="title-sm" Foreground="{StaticResource OnSurfaceBrush}"
+                                           Text="Avisar de novedades al abrir EnderDrive"/>
+                                <TextBlock Classes="body-sm" TextWrapping="Wrap"
+                                           Foreground="{StaticResource OnSurfaceVariantBrush}"
+                                           Text="Si hay mundos con una versión más nueva en la nube, mundos que no están en este PC o conflictos."/>
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" OnContent="" OffContent=""
+                                          IsChecked="{Binding NotifyCloudChangesOnStartup}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
                 <!-- ===== SECCIÓN: COPIAS DE SEGURIDAD ===== -->
                 <Border Padding="16" Background="{StaticResource SurfaceLowBrush}"
                         CornerRadius="{StaticResource RadiusXl}">

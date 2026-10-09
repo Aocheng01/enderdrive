@@ -23,6 +23,12 @@ namespace EnderDrive.ViewModels.Pages
         public string BackupsPath => _backupService.BackupsPath;
         public bool IsCustomBackupsPath => _settings.Current.BackupsPath is not null;
 
+        [ObservableProperty]
+        public partial bool AutoUploadOnWorldClose { get; set; }
+
+        [ObservableProperty]
+        public partial bool NotifyCloudChangesOnStartup { get; set; }
+
         /// <summary>decimal? porque es el tipo que usa NumericUpDown.</summary>
         [ObservableProperty]
         public partial decimal? MaxBackupsPerWorld { get; set; }
@@ -41,6 +47,22 @@ namespace EnderDrive.ViewModels.Pages
         }
 
         public override void OnNavigatedTo() => LoadValues();
+
+        partial void OnAutoUploadOnWorldCloseChanged(bool value)
+        {
+            if (_isLoading)
+                return;
+            _settings.Current.AutoUploadOnWorldClose = value;
+            Save();
+        }
+
+        partial void OnNotifyCloudChangesOnStartupChanged(bool value)
+        {
+            if (_isLoading)
+                return;
+            _settings.Current.NotifyCloudChangesOnStartup = value;
+            Save();
+        }
 
         partial void OnMaxBackupsPerWorldChanged(decimal? value)
         {
@@ -82,6 +104,8 @@ namespace EnderDrive.ViewModels.Pages
         {
             _isLoading = true;
             MaxBackupsPerWorld = _settings.Current.MaxBackupsPerWorld;
+            AutoUploadOnWorldClose = _settings.Current.AutoUploadOnWorldClose;
+            NotifyCloudChangesOnStartup = _settings.Current.NotifyCloudChangesOnStartup;
             _isLoading = false;
 
             OnPropertyChanged(nameof(BackupsPath));

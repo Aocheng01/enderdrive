@@ -40,10 +40,17 @@ namespace EnderDrive.ViewModels
         public partial bool IsRunning { get; set; }
 
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(Icon))]
+        [NotifyPropertyChangedFor(nameof(Icon), nameof(ShowProgress))]
         public partial bool IsError { get; set; }
 
-        public string Icon => IsRunning ? "sync" : IsError ? "error" : "check_circle";
+        /// <summary>Aviso informativo (sin operación en curso ni barra de progreso).</summary>
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Icon), nameof(ShowProgress))]
+        public partial bool IsInfo { get; set; }
+
+        public string Icon => IsRunning ? "sync" : IsError ? "error" : IsInfo ? "notifications" : "check_circle";
+
+        public bool ShowProgress => !IsError && !IsInfo;
 
         /// <summary>Muestra el aviso con barra de progreso y devuelve el IProgress que la actualiza.</summary>
         public IProgress<OperationProgress> Start(string title, string subject)
@@ -55,6 +62,7 @@ namespace EnderDrive.ViewModels
             ProgressText = "";
             Progress = 0;
             IsError = false;
+            IsInfo = false;
             IsRunning = true;
             IsOpen = true;
 
@@ -72,6 +80,24 @@ namespace EnderDrive.ViewModels
 
         public void Fail(string message) => Finish(message, isError: true, TimeSpan.FromSeconds(10));
 
+        /// <summary>Aviso sin operación detrás, p. ej. "hay 2 mundos con versión nueva en la nube".</summary>
+        public async void Inform(string title, string subject, string message)
+        {
+            var version = ++_version;
+            Title = title;
+            Subject = subject;
+            StageText = message;
+            ProgressText = "";
+            IsRunning = false;
+            IsError = false;
+            IsInfo = true;
+            IsOpen = true;
+
+            await Task.Delay(TimeSpan.FromSeconds(12));
+            if (version == _version)
+                IsOpen = false;
+        }
+
         [RelayCommand]
         private void Close() => IsOpen = false;
 
@@ -79,6 +105,7 @@ namespace EnderDrive.ViewModels
         {
             var version = ++_version;
             IsRunning = false;
+            IsInfo = false;
             IsError = isError;
             Progress = isError ? Progress : 100;
             StageText = message;

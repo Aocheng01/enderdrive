@@ -119,6 +119,15 @@
                                    Foreground="{StaticResource PrimaryBrush}" Text="cloud_sync"/>
                         <TextBlock Classes="body-sm" VerticalAlignment="Center"
                                    Foreground="{StaticResource OutlineBrush}" Text="{Binding SyncSummaryText}"/>
+                        <Button Classes="subtle" Height="24" Padding="8,0" Margin="6,0,0,0"
+                                Command="{Binding SyncAllCommand}"
+                                ToolTip.Tip="Subir los cambios y bajar las versiones más nuevas de todos los mundos">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Classes="icon" FontSize="14"
+                                           Foreground="{StaticResource PrimaryBrush}" Text="sync"/>
+                                <TextBlock VerticalAlignment="Center" FontSize="11" Text="Sincronizar todo"/>
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                 </WrapPanel>
 
@@ -356,8 +365,13 @@
                                                 Classes.pending="{Binding HasPendingChanges}"
                                                 Classes.cloud="{Binding IsCloudSide}"
                                                 Classes.conflict="{Binding HasConflict}"
+                                                Classes.inuse="{Binding IsInUse}"
                                                 ToolTip.Tip="{Binding LastUploadText}">
                                             <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <!-- Mientras Minecraft lo tiene abierto, solo el mando de juego -->
+                                                <TextBlock Classes="icon" FontSize="13"
+                                                           IsVisible="{Binding IsInUse}" Text="sports_esports"/>
+                                                <StackPanel Orientation="Horizontal" IsVisible="{Binding !IsInUse}">
                                                 <Ellipse Width="6" Height="6" VerticalAlignment="Center"
                                                          Fill="{StaticResource PrimaryBrush}"
                                                          IsVisible="{Binding IsSynced}"/>
@@ -369,6 +383,7 @@
                                                            IsVisible="{Binding IsCloudSide}" Text="cloud_download"/>
                                                 <TextBlock Classes="icon" FontSize="13"
                                                            IsVisible="{Binding HasConflict}" Text="call_split"/>
+                                                </StackPanel>
                                                 <TextBlock Classes="label-mono-sm" VerticalAlignment="Center"
                                                            Text="{Binding SyncBadgeText}"/>
                                             </StackPanel>

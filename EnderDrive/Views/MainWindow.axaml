@@ -144,7 +144,7 @@
 
                 <ProgressBar Classes="xp" Maximum="100" Value="{Binding Toast.Progress}"
                              Foreground="{StaticResource PrimaryContainerBrush}"
-                             IsVisible="{Binding !Toast.IsError}"/>
+                             IsVisible="{Binding Toast.ShowProgress}"/>
 
                 <Grid ColumnDefinitions="*,Auto">
                     <TextBlock Classes="label-mono-sm toast-stage" TextWrapping="Wrap"

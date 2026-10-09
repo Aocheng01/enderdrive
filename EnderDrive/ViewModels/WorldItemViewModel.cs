@@ -67,6 +67,11 @@ namespace EnderDrive.ViewModels
         [NotifyPropertyChangedFor(nameof(SyncBadgeText))]
         public partial bool IsCheckingSync { get; set; }
 
+        /// <summary>Minecraft tiene el mundo abierto ahora mismo (lo avisa WorldActivityMonitor).</summary>
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(SyncBadgeText))]
+        public partial bool IsInUse { get; set; }
+
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(SyncBadgeText))]
         public partial long PendingBytes { get; set; }
@@ -88,7 +93,7 @@ namespace EnderDrive.ViewModels
         public bool ShowDownloadButton => IsCloudSide;
         public string DownloadButtonText => IsCloudOnly ? "Descargar" : "Descargar cambios";
 
-        public string SyncBadgeText => IsCheckingSync ? "Comprobando la nube…" : SyncState switch
+        public string SyncBadgeText => IsInUse ? "Abierto en Minecraft" : IsCheckingSync ? "Comprobando la nube…" : SyncState switch
         {
             Core.Services.SyncState.Synced => "Sincronizado con la nube",
             Core.Services.SyncState.PendingChanges => $"Cambios locales pendientes ({Formatters.Size(PendingBytes)})",

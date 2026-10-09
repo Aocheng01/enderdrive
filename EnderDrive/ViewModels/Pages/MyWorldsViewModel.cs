@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EnderDrive.Core.Cloud;
@@ -37,6 +38,10 @@ public partial class MyWorldsViewModel : ViewModelBase
     private readonly CloudSyncViewModel _cloudPage;
     private readonly ICloudProvider _cloudProvider;
     private readonly IDialogService _dialogs;
+    private readonly WorldActivityMonitor _activity;
+
+    // El aviso "hay novedades en la nube" solo se muestra una vez, al arrancar
+    private bool _startupNoticeDone;
 
     // Si se pide comprobar la nube dos veces seguidas, solo vale el resultado de la última
     private int _syncCheckVersion;
@@ -118,7 +123,8 @@ public partial class MyWorldsViewModel : ViewModelBase
         ISyncService sync,
         CloudSyncViewModel cloudPage,
         ICloudProvider cloudProvider,
-        IDialogService dialogs)
+        IDialogService dialogs,
+        WorldActivityMonitor activity)
     {
         _scanner = scanner;
         _folderPicker = folderPicker;
@@ -134,6 +140,11 @@ public partial class MyWorldsViewModel : ViewModelBase
         _cloudPage = cloudPage;
         _cloudProvider = cloudProvider;
         _dialogs = dialogs;
+        _activity = activity;
+
+        // El vigilante avisa desde un hilo en segundo plano: pasamos al hilo de la interfaz
+        _activity.WorldOpened += path => Dispatcher.UIThread.Post(() => OnWorldOpened(path));
+        _activity.WorldClosed += path => Dispatcher.UIThread.Post(() => _ = OnWorldClosedAsync(path));
 
         // Al conectar o desconectar la cuenta, volvemos a comprobar el estado de los mundos
         _cloud.PropertyChanged += OnCloudPropertyChanged;
@@ -146,6 +157,15 @@ public partial class MyWorldsViewModel : ViewModelBase
         StatusText = "";
         TotalSizeText = "";
         LastScanText = "";
+
+        _activity.Start(SavesPath);
+    }
+
+    // Si cambia la carpeta saves, el vigilante pasa a vigilar la nueva
+    partial void OnSavesPathChanged(string value)
+    {
+        if (_activity is not null) // en el constructor se asigna SavesPath antes que _activity
+            _activity.Start(value);
     }
 
     /// <summary>
@@ -217,7 +237,12 @@ public partial class MyWorldsViewModel : ViewModelBase
             return;
         }
 
-        var progress = _toast.Start($"Sincronizando con {_cloud.ProviderName}", world.Name);
+        await UploadCoreAsync(world, $"Sincronizando con {_cloud.ProviderName}");
+    }
+
+    private async Task<bool> UploadCoreAsync(WorldItemViewModel world, string toastTitle)
+    {
+        var progress = _toast.Start(toastTitle, world.Name);
         try
         {
             var uploaded = await _sync.UploadWorldAsync(world.FolderPath, progress);
@@ -227,12 +252,117 @@ public partial class MyWorldsViewModel : ViewModelBase
             // Lo acabamos de subir: está sincronizado
             world.ApplySyncStatus(new WorldSyncStatus(SyncState.Synced, uploaded, 0));
             UpdateSyncSummary();
+            return true;
         }
         catch (Exception e) when (e is CloudException or IOException or UnauthorizedAccessException)
         {
             _toast.Fail(e.Message);
+            return false;
         }
     }
+
+    /// <summary>
+    /// "Sincronizar todo": sube los mundos con cambios y baja las versiones más nuevas de la nube.
+    /// Los conflictos se saltan porque necesitan que el usuario elija.
+    /// </summary>
+    [RelayCommand]
+    private async Task SyncAllAsync()
+    {
+        if (!_cloud.IsSignedIn)
+        {
+            _toast.Fail($"Conecta tu cuenta de {_cloud.ProviderName} para sincronizar.");
+            _navigation.NavigateTo(_cloudPage);
+            return;
+        }
+
+        var toUpload = _allWorlds.Where(w => w.HasPendingChanges && !w.IsInUse).ToList();
+        var toDownload = _allWorlds.Where(w => w.IsCloudNewer && !w.IsInUse).ToList();
+        var conflicts = _allWorlds.Count(w => w.HasConflict);
+
+        if (toUpload.Count + toDownload.Count == 0)
+        {
+            _toast.Inform("Sincronizar todo", "Nada que hacer",
+                conflicts > 0 ? $"Todo al día salvo {conflicts} conflicto(s): resuélvelos con «Resolver»." : "Todos los mundos están al día.");
+            return;
+        }
+
+        // Descargar sustituye mundos: lo confirmamos (con todo lo que se va a hacer)
+        if (toDownload.Count > 0)
+        {
+            var message = $"Se subirán {toUpload.Count} mundo(s) y se descargarán {toDownload.Count}: "
+                + string.Join(", ", toDownload.Select(w => w.Name)) + ".\n\n"
+                + "Antes de sustituir cada mundo se guarda una copia de su estado actual en Copias de Seguridad.";
+            if (conflicts > 0)
+                message += $"\n\n{conflicts} conflicto(s) se saltarán: resuélvelos uno a uno.";
+
+            var confirmed = await _dialogs.ConfirmAsync(new ConfirmOptions(
+                Title: "¿Sincronizar todos los mundos?",
+                Message: message,
+                ConfirmText: "Sincronizar todo",
+                Icon: "cloud_sync"));
+            if (!confirmed)
+                return;
+        }
+
+        var done = 0;
+        var total = toUpload.Count + toDownload.Count;
+        foreach (var world in toUpload)
+            if (await UploadCoreAsync(world, $"Sincronizando todo ({++done}/{total})"))
+                continue;
+            else
+                return; // si falla una, paramos (el aviso ya muestra el error)
+
+        foreach (var world in toDownload)
+        {
+            var progress = _toast.Start($"Sincronizando todo ({++done}/{total})", world.Name);
+            try
+            {
+                await _sync.DownloadWorldAsync(world.LatestCloudBackup!, SavesPath, progress);
+            }
+            catch (Exception e) when (e is CloudException or IOException or InvalidDataException or UnauthorizedAccessException)
+            {
+                _toast.Fail(e.Message);
+                await RefreshAsync();
+                return;
+            }
+        }
+
+        _toast.Succeed(total == 1 ? "1 mundo sincronizado" : $"{total} mundos sincronizados");
+        if (toDownload.Count > 0)
+            await RefreshAsync();
+    }
+
+    private void OnWorldOpened(string worldFolder)
+    {
+        if (FindWorld(worldFolder) is { } world)
+            world.IsInUse = true;
+    }
+
+    /// <summary>
+    /// Has salido de un mundo en Minecraft: volvemos a escanear (puede haber cambiado su tamaño,
+    /// o ser un mundo nuevo) y, si tiene cambios y ya estaba en la nube, lo subimos solo.
+    /// </summary>
+    private async Task OnWorldClosedAsync(string worldFolder)
+    {
+        if (FindWorld(worldFolder) is { } closing)
+            closing.IsInUse = false;
+
+        // Minecraft suelta session.lock al final de guardar; damos un margen por si acaso
+        await Task.Delay(TimeSpan.FromSeconds(3));
+        await RefreshAsync();
+
+        if (!_cloud.IsSignedIn || FindWorld(worldFolder) is not { } world)
+            return;
+
+        if (world.HasPendingChanges && _settings.Current.AutoUploadOnWorldClose)
+            await UploadCoreAsync(world, "Subida automática");
+        else if (world.HasConflict)
+            _toast.Fail($"«{world.Name}» ha cambiado aquí y en la nube. Resuélvelo en Mis Mundos.");
+    }
+
+    private WorldItemViewModel? FindWorld(string worldFolder)
+        => _allWorlds.FirstOrDefault(w => !w.IsCloudOnly
+            && string.Equals(Path.GetFullPath(w.FolderPath), Path.GetFullPath(worldFolder), StringComparison.OrdinalIgnoreCase));
 
     /// <summary>"Sincronizar ahora" de la barra inferior: hace lo que toque según el estado del mundo.</summary>
     [RelayCommand]
@@ -340,7 +470,10 @@ public partial class MyWorldsViewModel : ViewModelBase
         try
         {
             var worlds = await _scanner.ScanAsync(SavesPath);
-            _allWorlds = worlds.Select(w => new WorldItemViewModel(w, _folderLauncher, _clipboard)).ToList();
+            _allWorlds = worlds.Select(w => new WorldItemViewModel(w, _folderLauncher, _clipboard)
+            {
+                IsInUse = _activity.IsOpen(w.FolderPath),
+            }).ToList();
         }
         catch (Exception e)
         {
@@ -364,6 +497,12 @@ public partial class MyWorldsViewModel : ViewModelBase
     /// <summary>Pide la lista de la nube una sola vez y calcula el estado de cada mundo.</summary>
     private async Task CheckSyncStatusAsync()
     {
+        // Si se está escaneando, la lista de mundos aún está vacía: compararla con la nube haría
+        // creer que todos los mundos de la nube faltan en este PC. RefreshAsync ya comprobará
+        // la nube cuando termine el escaneo (pasa al arrancar: la sesión se recupera a la vez).
+        if (IsLoading)
+            return;
+
         var version = ++_syncCheckVersion;
         var worlds = _allWorlds.Where(w => !w.IsCloudOnly).ToList();
 
@@ -396,6 +535,7 @@ public partial class MyWorldsViewModel : ViewModelBase
                 .Select(b => WorldItemViewModel.FromCloud(b, SavesPath, _folderLauncher, _clipboard))
                 .ToList();
             SetCloudOnlyWorlds(worlds, cloudOnly);
+            ShowStartupNotice();
         }
         catch (Exception e) when (e is CloudException or IOException or UnauthorizedAccessException)
         {
@@ -412,6 +552,30 @@ public partial class MyWorldsViewModel : ViewModelBase
         // Solo nos interesa cuando cambia la cuenta (conectar/desconectar), no la cuota
         if (e.PropertyName == nameof(CloudSessionViewModel.IsSignedIn))
             _ = CheckSyncStatusAsync();
+    }
+
+    /// <summary>La primera vez que se comprueba la nube, avisamos si hay algo que hacer.</summary>
+    private void ShowStartupNotice()
+    {
+        if (_startupNoticeDone)
+            return;
+        _startupNoticeDone = true;
+
+        if (!_settings.Current.NotifyCloudChangesOnStartup)
+            return;
+
+        var newer = _allWorlds.Count(w => w.IsCloudNewer);
+        var cloudOnly = _allWorlds.Count(w => w.IsCloudOnly);
+        var conflicts = _allWorlds.Count(w => w.HasConflict);
+
+        var parts = new List<string>();
+        if (newer > 0) parts.Add(newer == 1 ? "1 mundo con versión más nueva" : $"{newer} mundos con versión más nueva");
+        if (cloudOnly > 0) parts.Add(cloudOnly == 1 ? "1 mundo que no está en este PC" : $"{cloudOnly} mundos que no están en este PC");
+        if (conflicts > 0) parts.Add(conflicts == 1 ? "1 conflicto" : $"{conflicts} conflictos");
+
+        if (parts.Count > 0)
+            _toast.Inform($"Novedades en {_cloud.ProviderName}", string.Join(" · ", parts),
+                "Usa «Sincronizar todo» o los botones de cada mundo.");
     }
 
     private void SetCloudOnlyWorlds(List<WorldItemViewModel> localWorlds, List<WorldItemViewModel> cloudOnly)
