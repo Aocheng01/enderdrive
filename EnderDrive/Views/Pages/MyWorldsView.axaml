@@ -195,7 +195,7 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
-                    <Button Classes="subtle" IsEnabled="{Binding HasSelection}"
+                    <Button Classes="subtle" IsEnabled="{Binding HasLocalSelection}"
                             ToolTip.Tip="Abrir la carpeta del mundo en el Explorador"
                             Command="{Binding SelectedWorld.OpenFolderCommand, FallbackValue={x:Null}}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
@@ -204,7 +204,7 @@
                             <TextBlock VerticalAlignment="Center" Text="Abrir carpeta"/>
                         </StackPanel>
                     </Button>
-                    <Button Classes="secondary" FontSize="12" IsEnabled="{Binding HasSelection}"
+                    <Button Classes="secondary" FontSize="12" IsEnabled="{Binding HasLocalSelection}"
                             Command="{Binding CreateBackupCommand}"
                             ToolTip.Tip="Guardar una copia de seguridad (.zip) del mundo">
                         <StackPanel Orientation="Horizontal" Spacing="6">
@@ -213,7 +213,7 @@
                             <TextBlock VerticalAlignment="Center" Text="Crear copia"/>
                         </StackPanel>
                     </Button>
-                    <Button Classes="secondary" FontSize="12" IsEnabled="{Binding HasSelection}"
+                    <Button Classes="secondary" FontSize="12" IsEnabled="{Binding HasLocalSelection}"
                             Command="{Binding ShowBackupsCommand}"
                             ToolTip.Tip="Ver las copias de este mundo y restaurar una">
                         <StackPanel Orientation="Horizontal" Spacing="6">
@@ -223,8 +223,7 @@
                         </StackPanel>
                     </Button>
                     <Button Classes="emerald" IsEnabled="{Binding HasSelection}"
-                            Command="{Binding SyncWorldCommand}"
-                            CommandParameter="{Binding SelectedWorld}"
+                            Command="{Binding SyncSelectedCommand}"
                             ToolTip.Tip="Crear una copia del mundo y subirla a Google Drive">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Classes="icon" FontSize="17" Text="sync"/>
@@ -305,7 +304,7 @@
                                                        ToolTip.Tip="{Binding FolderName}"
                                                        Text="{Binding Name}"/>
                                             <!-- Classes.hardcore="true" añade la clase "hardcore" cuando el valor es true   -->
-                                            <Border Classes="chip"
+                                            <Border Classes="chip" IsVisible="{Binding !IsCloudOnly}"
                                                     Classes.hardcore="{Binding IsHardcore}"
                                                     Classes.modded="{Binding IsModded}"
                                                     Classes.plugin="{Binding IsPluginServer}">
@@ -355,6 +354,8 @@
                                         <Border Classes="status-badge sync-badge" Margin="0,4,0,0"
                                                 Classes.synced="{Binding IsSynced}"
                                                 Classes.pending="{Binding HasPendingChanges}"
+                                                Classes.cloud="{Binding IsCloudSide}"
+                                                Classes.conflict="{Binding HasConflict}"
                                                 ToolTip.Tip="{Binding LastUploadText}">
                                             <StackPanel Orientation="Horizontal" Spacing="6">
                                                 <Ellipse Width="6" Height="6" VerticalAlignment="Center"
@@ -364,6 +365,10 @@
                                                            IsVisible="{Binding HasPendingChanges}" Text="warning"/>
                                                 <TextBlock Classes="icon" FontSize="13"
                                                            IsVisible="{Binding ShowEnableButton}" Text="cloud_off"/>
+                                                <TextBlock Classes="icon" FontSize="13"
+                                                           IsVisible="{Binding IsCloudSide}" Text="cloud_download"/>
+                                                <TextBlock Classes="icon" FontSize="13"
+                                                           IsVisible="{Binding HasConflict}" Text="call_split"/>
                                                 <TextBlock Classes="label-mono-sm" VerticalAlignment="Center"
                                                            Text="{Binding SyncBadgeText}"/>
                                             </StackPanel>
@@ -396,6 +401,24 @@
                                                 <TextBlock VerticalAlignment="Center" Text="Subir cambios"/>
                                             </StackPanel>
                                         </Button>
+                                        <Button Classes="emerald" IsVisible="{Binding ShowDownloadButton}"
+                                                Command="{Binding $parent[ListBox].((vm:MyWorldsViewModel)DataContext).DownloadWorldCommand}"
+                                                CommandParameter="{Binding}"
+                                                ToolTip.Tip="Bajar la versión de la nube a este PC">
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Classes="icon" FontSize="16" Text="cloud_download"/>
+                                                <TextBlock VerticalAlignment="Center" Text="{Binding DownloadButtonText}"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Classes="danger" IsVisible="{Binding HasConflict}"
+                                                Command="{Binding $parent[ListBox].((vm:MyWorldsViewModel)DataContext).ResolveConflictCommand}"
+                                                CommandParameter="{Binding}"
+                                                ToolTip.Tip="Elegir qué versión conservar">
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Classes="icon" FontSize="16" Text="call_split"/>
+                                                <TextBlock VerticalAlignment="Center" Text="Resolver"/>
+                                            </StackPanel>
+                                        </Button>
                                         <Border IsVisible="{Binding IsSynced}" Padding="12,0" Height="32"
                                                 CornerRadius="{StaticResource RadiusLg}"
                                                 Background="{StaticResource PrimarySoftBrush}"
@@ -409,7 +432,8 @@
                                         </Border>
 
                                         <!-- Menú ⋮: el Flyout hereda el DataContext del botón (el mundo) -->
-                                        <Button Classes="icon-button" ToolTip.Tip="Más opciones">
+                                        <Button Classes="icon-button" ToolTip.Tip="Más opciones"
+                                                IsVisible="{Binding !IsCloudOnly}">
                                             <TextBlock Classes="icon" FontSize="16" Text="more_vert"/>
                                             <Button.Flyout>
                                                 <MenuFlyout Placement="BottomEdgeAlignedRight">

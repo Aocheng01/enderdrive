@@ -1,6 +1,7 @@
 using System.Globalization;
 using EnderDrive.Core.Cloud;
 using EnderDrive.Core.Models;
+using Google.Apis.Download;
 using Google.Apis.Upload;
 using DriveFile = Google.Apis.Drive.v3.Data.File;
 
@@ -113,6 +114,44 @@ public sealed partial class GoogleDriveProvider
         // A la papelera, no borrado definitivo: el usuario puede recuperarla durante 30 días
         var request = RequireDrive().Files.Update(new DriveFile { Trashed = true }, backup.Id);
         return Translate(() => request.ExecuteAsync(cancellationToken));
+    }
+
+    public async Task DownloadBackupAsync(
+        CloudBackup backup,
+        string destinationFile,
+        IProgress<OperationProgress>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        var request = RequireDrive().Files.Get(backup.Id);
+
+        // Igual que la subida: por trozos, avisando de lo que lleva descargado
+        request.MediaDownloader.ChunkSize = ResumableUpload.MinimumChunkSize * 4;
+        request.MediaDownloader.ProgressChanged += p =>
+            progress?.Report(new OperationProgress("Descargando de Google Drive", p.BytesDownloaded, backup.SizeBytes));
+
+        // Descargamos a ".part" y renombramos al final: nunca queda un .zip a medias con nombre válido
+        var partFile = destinationFile + ".part";
+        try
+        {
+            await using (var file = File.Create(partFile))
+            {
+                progress?.Report(new OperationProgress("Descargando de Google Drive", 0, backup.SizeBytes));
+                var result = await Translate(() => request.DownloadAsync(file, cancellationToken));
+
+                if (result.Status != DownloadStatus.Completed)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    throw new CloudException($"No se pudo descargar la copia: {result.Exception?.Message}", result.Exception);
+                }
+            }
+
+            File.Move(partFile, destinationFile, overwrite: true);
+        }
+        catch
+        {
+            File.Delete(partFile);
+            throw;
+        }
     }
 
     private async Task<string> GetOrCreateFolderAsync(string name, string? parentId, CancellationToken cancellationToken)

@@ -6,7 +6,7 @@ namespace EnderDrive.Views.Dialogs
 {
     /// <summary>
     /// Diálogo sencillo de Sí/No. No tiene ViewModel propio: sus textos vienen de
-    /// <see cref="ConfirmOptions"/> (el DataContext) y el resultado se devuelve con Close(true/false).
+    /// <see cref="ConfirmOptions"/> (el DataContext) y el resultado se devuelve con Close(DialogChoice).
     /// </summary>
     public partial class ConfirmDialog : Window
     {
@@ -15,9 +15,11 @@ namespace EnderDrive.Views.Dialogs
             InitializeComponent();
         }
 
-        private void Confirm_Click(object? sender, RoutedEventArgs e) => Close(true);
+        private void Confirm_Click(object? sender, RoutedEventArgs e) => Close(DialogChoice.Confirm);
 
-        private void Cancel_Click(object? sender, RoutedEventArgs e) => Close(false);
+        private void Alternative_Click(object? sender, RoutedEventArgs e) => Close(DialogChoice.Alternative);
+
+        private void Cancel_Click(object? sender, RoutedEventArgs e) => Close(DialogChoice.Cancel);
 
         protected override void OnPointerPressed(PointerPressedEventArgs e)
         {

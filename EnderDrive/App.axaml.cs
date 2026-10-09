@@ -58,6 +58,8 @@ public partial class App : Application
 
         // Nube: hoy Google Drive. Para usar otra nube bastaría con registrar otra ICloudProvider.
         services.AddSingleton<ISyncService, SyncService>();
+        services.AddSingleton<ISyncStateStore>(_ => new JsonSyncStateStore(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "EnderDrive", "sync-state.json")));
         services.AddSingleton<ICloudProvider>(_ => new GoogleDriveProvider(
             clientSecretsPath: Path.Combine(AppContext.BaseDirectory, GoogleCredentialsFileName),
             tokenFolder: Path.Combine(

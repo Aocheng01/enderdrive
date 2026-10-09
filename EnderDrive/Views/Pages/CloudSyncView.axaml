@@ -235,8 +235,21 @@
                                                                Text="{Binding SizeText}"/>
                                                 </StackPanel>
                                             </StackPanel>
-                                            <TextBlock Grid.Column="2" Classes="label-mono-sm" VerticalAlignment="Center"
-                                                       Foreground="{StaticResource OutlineBrush}" Text="{Binding FileName}"/>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12">
+                                                <TextBlock Classes="label-mono-sm" VerticalAlignment="Center"
+                                                           Foreground="{StaticResource OutlineBrush}" Text="{Binding FileName}"/>
+                                                <!-- Comando de la página: subimos al ItemsControl para llegar a su DataContext -->
+                                                <Button Classes="secondary" FontSize="12"
+                                                        Command="{Binding $parent[ItemsControl].((vm:CloudSyncViewModel)DataContext).RestoreCloudBackupCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        ToolTip.Tip="Descargar esta versión e instalarla">
+                                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                                        <TextBlock Classes="icon" FontSize="16"
+                                                                   Foreground="{StaticResource SecondaryBrush}" Text="history"/>
+                                                        <TextBlock VerticalAlignment="Center" Text="Restaurar"/>
+                                                    </StackPanel>
+                                                </Button>
+                                            </StackPanel>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>

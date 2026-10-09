@@ -1,10 +1,15 @@
+using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EnderDrive.Core.Cloud;
+using EnderDrive.Core.Services;
+using EnderDrive.Services;
+using EnderDrive.Views.Dialogs;
 
 namespace EnderDrive.ViewModels.Pages
 {
@@ -15,6 +20,11 @@ namespace EnderDrive.ViewModels.Pages
     public partial class CloudSyncViewModel : ViewModelBase
     {
         private readonly ICloudProvider _provider;
+        private readonly ISyncService _sync;
+        private readonly IDialogService _dialogs;
+        private readonly ToastViewModel _toast;
+        private readonly ISettingsService _settings;
+        private readonly IWorldScanner _scanner;
 
         public string Title => "Sincronización en la Nube";
 
@@ -34,10 +44,22 @@ namespace EnderDrive.ViewModels.Pages
 
         public bool HasNoCloudBackups => !IsLoadingBackups && CloudBackups.Count == 0;
 
-        public CloudSyncViewModel(CloudSessionViewModel cloud, ICloudProvider provider)
+        public CloudSyncViewModel(
+            CloudSessionViewModel cloud,
+            ICloudProvider provider,
+            ISyncService sync,
+            IDialogService dialogs,
+            ToastViewModel toast,
+            ISettingsService settings,
+            IWorldScanner scanner)
         {
             Cloud = cloud;
             _provider = provider;
+            _sync = sync;
+            _dialogs = dialogs;
+            _toast = toast;
+            _settings = settings;
+            _scanner = scanner;
 
             // Al conectar o desconectar la cuenta, recargamos (o vaciamos) la lista
             Cloud.PropertyChanged += OnCloudPropertyChanged;
@@ -79,6 +101,36 @@ namespace EnderDrive.ViewModels.Pages
             {
                 IsLoadingBackups = false;
                 UpdateSummary();
+            }
+        }
+
+        /// <summary>Baja una copia concreta de la nube (también versiones antiguas) e instala el mundo.</summary>
+        [RelayCommand]
+        private async Task RestoreCloudBackupAsync(CloudBackupItemViewModel? item)
+        {
+            if (item is null)
+                return;
+
+            var savesPath = _settings.Current.SavesPath ?? _scanner.DefaultSavesPath;
+            var confirmed = await _dialogs.ConfirmAsync(new ConfirmOptions(
+                Title: "¿Restaurar esta copia de la nube?",
+                Message: $"Se descargará la copia de «{item.WorldName}» subida {item.DateText.ToLowerInvariant()} "
+                    + $"y se instalará en {Formatters.ShortPath(savesPath)}.\n\n"
+                    + "Si el mundo ya existe, antes se guardará una copia de su estado actual en Copias de Seguridad.",
+                ConfirmText: "Restaurar",
+                Icon: "cloud_download"));
+            if (!confirmed)
+                return;
+
+            var progress = _toast.Start($"Descargando de {Cloud.ProviderName}", item.WorldName);
+            try
+            {
+                await _sync.DownloadWorldAsync(item.Backup, savesPath, progress);
+                _toast.Succeed("Copia restaurada");
+            }
+            catch (Exception e) when (e is CloudException or IOException or InvalidDataException or UnauthorizedAccessException)
+            {
+                _toast.Fail(e.Message);
             }
         }
 

@@ -4,11 +4,12 @@ using EnderDrive.Core.Models;
 namespace EnderDrive.Core.Tests.Helpers;
 
 /// <summary>
-/// Nube falsa en memoria: guarda las "subidas" en una lista. Así probamos SyncService
+/// Nube falsa: guarda las "subidas" en una carpeta local. Así probamos SyncService
 /// sin Internet ni cuenta de Google, y sin tocar nada real.
 /// </summary>
-public sealed class FakeCloudProvider : ICloudProvider
+public sealed class FakeCloudProvider(string storageFolder) : ICloudProvider
 {
+    private readonly Dictionary<string, string> _contents = new(); // id → archivo con el contenido
     private int _nextId;
 
     public List<CloudBackup> Files { get; } = [];
@@ -25,13 +26,13 @@ public sealed class FakeCloudProvider : ICloudProvider
         CancellationToken cancellationToken = default)
     {
         progress?.Report(new OperationProgress("Subiendo", backup.SizeBytes, backup.SizeBytes));
-
-        var uploaded = new CloudBackup($"id-{_nextId++}", backup.WorldFolderName, Path.GetFileName(backup.FilePath),
-            backup.CreatedAt, backup.SizeBytes, backup.Reason, fingerprint);
-        Files.Add(uploaded);
         UploadedPaths.Add(backup.FilePath);
-        return Task.FromResult(uploaded);
+        return Task.FromResult(Store(backup.WorldFolderName, backup.FilePath, backup.CreatedAt, fingerprint));
     }
+
+    /// <summary>Simula que otro PC ha subido una copia de este mundo.</summary>
+    public CloudBackup AddRemoteBackup(string worldFolderName, string zipPath, string? fingerprint, DateTime? createdAt = null)
+        => Store(worldFolderName, zipPath, createdAt ?? DateTime.Now.AddSeconds(5), fingerprint);
 
     public Task<IReadOnlyList<CloudBackup>> ListBackupsAsync(CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<CloudBackup>>(Files.OrderByDescending(f => f.CreatedAt).ToList());
@@ -41,6 +42,29 @@ public sealed class FakeCloudProvider : ICloudProvider
         Files.Remove(backup);
         Trash.Add(backup);
         return Task.CompletedTask;
+    }
+
+    public Task DownloadBackupAsync(
+        CloudBackup backup, string destinationFile, IProgress<OperationProgress>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        progress?.Report(new OperationProgress("Descargando", backup.SizeBytes, backup.SizeBytes));
+        File.Copy(_contents[backup.Id], destinationFile, overwrite: true);
+        return Task.CompletedTask;
+    }
+
+    private CloudBackup Store(string world, string zipPath, DateTime createdAt, string? fingerprint)
+    {
+        Directory.CreateDirectory(storageFolder);
+        var id = $"id-{_nextId++}";
+        var stored = Path.Combine(storageFolder, id + ".zip");
+        File.Copy(zipPath, stored);
+        _contents[id] = stored;
+
+        var backup = new CloudBackup(id, world, Path.GetFileName(zipPath), createdAt,
+            new FileInfo(stored).Length, BackupReason.Manual, fingerprint);
+        Files.Add(backup);
+        return backup;
     }
 
     // La parte de la cuenta no se usa en estos tests

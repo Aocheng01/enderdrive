@@ -11,6 +11,7 @@ using EnderDrive.Core.Cloud;
 using EnderDrive.Core.Models;
 using EnderDrive.Core.Services;
 using EnderDrive.Services;
+using EnderDrive.Views.Dialogs;
 
 namespace EnderDrive.ViewModels.Pages;
 
@@ -35,6 +36,7 @@ public partial class MyWorldsViewModel : ViewModelBase
     private readonly ISyncService _sync;
     private readonly CloudSyncViewModel _cloudPage;
     private readonly ICloudProvider _cloudProvider;
+    private readonly IDialogService _dialogs;
 
     // Si se pide comprobar la nube dos veces seguidas, solo vale el resultado de la última
     private int _syncCheckVersion;
@@ -66,7 +68,7 @@ public partial class MyWorldsViewModel : ViewModelBase
     public partial string SelectedSort { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasSelection))]
+    [NotifyPropertyChangedFor(nameof(HasSelection), nameof(HasLocalSelection))]
     public partial WorldItemViewModel? SelectedWorld { get; set; }
 
     [ObservableProperty]
@@ -93,6 +95,9 @@ public partial class MyWorldsViewModel : ViewModelBase
     public bool IsEmpty => !IsLoading && Worlds.Count == 0;
     public bool HasSelection => SelectedWorld is not null;
 
+    /// <summary>Hay un mundo seleccionado y existe en este PC (no es "Solo en la nube").</summary>
+    public bool HasLocalSelection => SelectedWorld is { IsCloudOnly: false };
+
     /// <summary>true si el usuario eligió una carpeta distinta de la de por defecto.</summary>
     public bool IsCustomPath => !string.Equals(SavesPath, _scanner.DefaultSavesPath, StringComparison.OrdinalIgnoreCase);
 
@@ -112,7 +117,8 @@ public partial class MyWorldsViewModel : ViewModelBase
         CloudSessionViewModel cloud,
         ISyncService sync,
         CloudSyncViewModel cloudPage,
-        ICloudProvider cloudProvider)
+        ICloudProvider cloudProvider,
+        IDialogService dialogs)
     {
         _scanner = scanner;
         _folderPicker = folderPicker;
@@ -127,6 +133,7 @@ public partial class MyWorldsViewModel : ViewModelBase
         _sync = sync;
         _cloudPage = cloudPage;
         _cloudProvider = cloudProvider;
+        _dialogs = dialogs;
 
         // Al conectar o desconectar la cuenta, volvemos a comprobar el estado de los mundos
         _cloud.PropertyChanged += OnCloudPropertyChanged;
@@ -227,6 +234,89 @@ public partial class MyWorldsViewModel : ViewModelBase
         }
     }
 
+    /// <summary>"Sincronizar ahora" de la barra inferior: hace lo que toque según el estado del mundo.</summary>
+    [RelayCommand]
+    private Task SyncSelectedAsync()
+    {
+        if (SelectedWorld is not { } world)
+            return Task.CompletedTask;
+
+        return world switch
+        {
+            { IsCloudSide: true } => DownloadWorldAsync(world),
+            { HasConflict: true } => ResolveConflictAsync(world),
+            _ => SyncWorldAsync(world),
+        };
+    }
+
+    /// <summary>"Descargar" (mundo solo en la nube) o "Descargar cambios" (versión más nueva en la nube).</summary>
+    [RelayCommand]
+    private async Task DownloadWorldAsync(WorldItemViewModel? world)
+    {
+        if (world?.LatestCloudBackup is not { } backup)
+            return;
+
+        // Si el mundo ya está en este PC, se va a sustituir: pedimos confirmación
+        if (!world.IsCloudOnly)
+        {
+            var confirmed = await _dialogs.ConfirmAsync(new ConfirmOptions(
+                Title: "¿Descargar la versión de la nube?",
+                Message: $"«{world.Name}» se sustituirá por la versión subida {Formatters.RelativeDate(backup.CreatedAt).ToLowerInvariant()}.\n\n"
+                    + "Antes se guardará una copia del estado actual en Copias de Seguridad, así que podrás deshacerlo.",
+                ConfirmText: "Descargar",
+                Icon: "cloud_download"));
+            if (!confirmed)
+                return;
+        }
+
+        await DownloadCoreAsync(world.Name, backup);
+    }
+
+    /// <summary>El mundo cambió aquí y en la nube: el usuario elige qué versión conservar.</summary>
+    [RelayCommand]
+    private async Task ResolveConflictAsync(WorldItemViewModel? world)
+    {
+        if (world?.LatestCloudBackup is not { } backup)
+            return;
+
+        var choice = await _dialogs.ChooseAsync(new ConfirmOptions(
+            Title: "Este mundo ha cambiado en los dos sitios",
+            Message: $"Has jugado a «{world.Name}» en este PC y, además, en la nube hay una versión subida "
+                + $"{Formatters.RelativeDate(backup.CreatedAt).ToLowerInvariant()} desde otro sitio.\n\n"
+                + "Elige cuál quieres conservar. La otra no se pierde: queda guardada como copia "
+                + "(en la nube o en Copias de Seguridad).",
+            ConfirmText: "Subir la de este PC",
+            Icon: "call_split",
+            AlternativeText: "Usar la de la nube"));
+
+        switch (choice)
+        {
+            case DialogChoice.Confirm:
+                await SyncWorldAsync(world);
+                break;
+            case DialogChoice.Alternative:
+                await DownloadCoreAsync(world.Name, backup);
+                break;
+        }
+    }
+
+    private async Task DownloadCoreAsync(string worldName, CloudBackup backup)
+    {
+        var progress = _toast.Start($"Descargando de {_cloud.ProviderName}", worldName);
+        try
+        {
+            await _sync.DownloadWorldAsync(backup, SavesPath, progress);
+            _toast.Succeed("Mundo descargado");
+        }
+        catch (Exception e) when (e is CloudException or IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            _toast.Fail(e.Message);
+        }
+
+        // El mundo ha cambiado (o es nuevo): volvemos a escanear
+        await RefreshAsync();
+    }
+
     [RelayCommand]
     private void ShowBackups()
     {
@@ -275,12 +365,13 @@ public partial class MyWorldsViewModel : ViewModelBase
     private async Task CheckSyncStatusAsync()
     {
         var version = ++_syncCheckVersion;
-        var worlds = _allWorlds;
+        var worlds = _allWorlds.Where(w => !w.IsCloudOnly).ToList();
 
         if (!_cloud.IsSignedIn)
         {
             foreach (var world in worlds)
                 world.ApplySyncStatus(null); // "Nube sin conectar"
+            SetCloudOnlyWorlds(worlds, []); // sin cuenta no sabemos qué hay en la nube
             UpdateSyncSummary();
             return;
         }
@@ -299,6 +390,12 @@ public partial class MyWorldsViewModel : ViewModelBase
 
                 world.ApplySyncStatus(status);
             }
+
+            // Mundos que están en la nube pero no en este PC
+            var cloudOnly = _sync.GetCloudOnlyWorlds(cloudBackups, worlds.Select(w => w.FolderName))
+                .Select(b => WorldItemViewModel.FromCloud(b, SavesPath, _folderLauncher, _clipboard))
+                .ToList();
+            SetCloudOnlyWorlds(worlds, cloudOnly);
         }
         catch (Exception e) when (e is CloudException or IOException or UnauthorizedAccessException)
         {
@@ -317,10 +414,24 @@ public partial class MyWorldsViewModel : ViewModelBase
             _ = CheckSyncStatusAsync();
     }
 
+    private void SetCloudOnlyWorlds(List<WorldItemViewModel> localWorlds, List<WorldItemViewModel> cloudOnly)
+    {
+        if (cloudOnly.Count == 0 && _allWorlds.All(w => !w.IsCloudOnly))
+            return; // nada que cambiar en la lista
+
+        _allWorlds = [.. localWorlds, .. cloudOnly];
+        ApplyFilter();
+    }
+
     private void UpdateSyncSummary()
     {
-        var synced = _allWorlds.Count(w => w.IsSynced);
-        SyncSummaryText = _cloud.IsSignedIn ? $"{synced} de {_allWorlds.Count} sincronizados" : "";
+        var local = _allWorlds.Where(w => !w.IsCloudOnly).ToList();
+        var synced = local.Count(w => w.IsSynced);
+        var cloudOnly = _allWorlds.Count - local.Count;
+
+        SyncSummaryText = !_cloud.IsSignedIn ? ""
+            : cloudOnly == 0 ? $"{synced} de {local.Count} sincronizados"
+            : $"{synced} de {local.Count} sincronizados · {cloudOnly} solo en la nube";
         _cloud.SyncedWorldsCount = _cloud.IsSignedIn ? synced : null;
     }
 
@@ -363,12 +474,15 @@ public partial class MyWorldsViewModel : ViewModelBase
 
     private void UpdateSummary()
     {
-        TotalSizeText = $"{Formatters.Size(_allWorlds.Sum(w => w.SizeBytes))} ocupados";
+        // Contamos solo los mundos de este PC (no las tarjetas "Solo en la nube")
+        var local = _allWorlds.Count(w => !w.IsCloudOnly);
+        var visible = Worlds.Count(w => !w.IsCloudOnly);
+        TotalSizeText = $"{Formatters.Size(_allWorlds.Where(w => !w.IsCloudOnly).Sum(w => w.SizeBytes))} ocupados";
 
         StatusText = IsLoading ? "Buscando mundos…"
-            : _scanError ?? (Worlds.Count == _allWorlds.Count
-                ? $"{_allWorlds.Count} Mundos detectados"
-                : $"{Worlds.Count} de {_allWorlds.Count} Mundos");
+            : _scanError ?? (visible == local
+                ? $"{local} Mundos detectados"
+                : $"{visible} de {local} Mundos");
     }
 
     private void SaveSavesPath(string? path)

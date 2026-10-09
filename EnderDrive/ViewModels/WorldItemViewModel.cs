@@ -1,11 +1,13 @@
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using EnderDrive.Core.Cloud;
 using EnderDrive.Core.Models;
 using EnderDrive.Core.Services;
 using EnderDrive.Services;
 using System;
 using System.Globalization;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace EnderDrive.ViewModels
@@ -49,9 +51,16 @@ namespace EnderDrive.ViewModels
 
         // ===== Estado respecto a la nube =====
 
+        /// <summary>true si el mundo está en la nube pero no en este PC (tarjeta "Solo en la nube").</summary>
+        public bool IsCloudOnly { get; }
+
+        /// <summary>La copia más reciente en la nube: es la que se descarga.</summary>
+        public CloudBackup? LatestCloudBackup { get; private set; }
+
         /// <summary>null = no se sabe (sin cuenta conectada o todavía comprobando).</summary>
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(IsSynced), nameof(HasPendingChanges), nameof(ShowEnableButton), nameof(SyncBadgeText))]
+        [NotifyPropertyChangedFor(nameof(IsSynced), nameof(HasPendingChanges), nameof(IsCloudNewer), nameof(HasConflict),
+            nameof(ShowEnableButton), nameof(ShowDownloadButton), nameof(IsCloudSide), nameof(SyncBadgeText))]
         public partial SyncState? SyncState { get; set; }
 
         [ObservableProperty]
@@ -67,14 +76,25 @@ namespace EnderDrive.ViewModels
 
         public bool IsSynced => SyncState == Core.Services.SyncState.Synced;
         public bool HasPendingChanges => SyncState == Core.Services.SyncState.PendingChanges;
+        public bool IsCloudNewer => SyncState == Core.Services.SyncState.CloudNewer;
+        public bool HasConflict => SyncState == Core.Services.SyncState.Conflict;
+
+        /// <summary>Lo que hay que hacer es bajar de la nube (versión más nueva o mundo que no está aquí).</summary>
+        public bool IsCloudSide => IsCloudNewer || IsCloudOnly;
 
         /// <summary>"Habilitar Cloud Sync": cuando nunca se subió o no sabemos el estado.</summary>
-        public bool ShowEnableButton => !IsSynced && !HasPendingChanges;
+        public bool ShowEnableButton => SyncState is null or Core.Services.SyncState.LocalOnly;
+
+        public bool ShowDownloadButton => IsCloudSide;
+        public string DownloadButtonText => IsCloudOnly ? "Descargar" : "Descargar cambios";
 
         public string SyncBadgeText => IsCheckingSync ? "Comprobando la nube…" : SyncState switch
         {
             Core.Services.SyncState.Synced => "Sincronizado con la nube",
             Core.Services.SyncState.PendingChanges => $"Cambios locales pendientes ({Formatters.Size(PendingBytes)})",
+            Core.Services.SyncState.CloudNewer => "Versión más nueva en la nube",
+            Core.Services.SyncState.Conflict => "Cambiado aquí y en la nube",
+            Core.Services.SyncState.CloudOnly => "Solo en la nube",
             Core.Services.SyncState.LocalOnly => "Solo en local",
             _ => "Nube sin conectar",
         };
@@ -83,6 +103,7 @@ namespace EnderDrive.ViewModels
         public void ApplySyncStatus(WorldSyncStatus? status)
         {
             IsCheckingSync = false;
+            LatestCloudBackup = status?.LastUpload;
             SyncState = status?.State;
             PendingBytes = status?.PendingBytes ?? 0;
             LastUploadText = status?.LastUpload is { } last
@@ -90,10 +111,32 @@ namespace EnderDrive.ViewModels
                 : null;
         }
 
-        public WorldItemViewModel(WorldInfo world, IFolderLauncher folderLauncher, IClipboardService clipboard)
+        /// <summary>
+        /// Tarjeta de un mundo que solo está en la nube. No tenemos su level.dat, así que
+        /// solo sabemos lo que dice la copia: nombre de carpeta, fecha y tamaño.
+        /// </summary>
+        public static WorldItemViewModel FromCloud(
+            CloudBackup backup, string savesPath, IFolderLauncher folderLauncher, IClipboardService clipboard)
+        {
+            var info = new WorldInfo(
+                Name: backup.WorldFolderName,
+                FolderName: backup.WorldFolderName,
+                FolderPath: Path.Combine(savesPath, backup.WorldFolderName),
+                LastPlayed: backup.CreatedAt,
+                SizeBytes: backup.SizeBytes,
+                IconPath: null, GameVersion: null, GameMode: null, IsHardcore: false, Seed: null, Loader: null);
+
+            var item = new WorldItemViewModel(info, folderLauncher, clipboard, isCloudOnly: true);
+            item.ApplySyncStatus(new WorldSyncStatus(Core.Services.SyncState.CloudOnly, backup, 0));
+            return item;
+        }
+
+        public WorldItemViewModel(WorldInfo world, IFolderLauncher folderLauncher, IClipboardService clipboard,
+            bool isCloudOnly = false)
         {
             _folderLauncher = folderLauncher;
             _clipboard = clipboard;
+            IsCloudOnly = isCloudOnly;
 
             Name = world.Name;
             FolderName = world.FolderName;

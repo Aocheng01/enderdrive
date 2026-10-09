@@ -347,6 +347,21 @@
     <Setter Property="Foreground" Value="{StaticResource SecondaryBrush}"/>
   </Style>
 
+  <!-- Versión más nueva en la nube / solo en la nube: verde claro -->
+  <Style Selector="Border.sync-badge.cloud">
+    <Setter Property="Background" Value="{StaticResource PrimarySoftBrush}"/>
+  </Style>
+  <Style Selector="Border.sync-badge.cloud TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource PrimaryHoverBrush}"/>
+  </Style>
+  <!-- Conflicto: rojo -->
+  <Style Selector="Border.sync-badge.conflict">
+    <Setter Property="Background" Value="#33930000"/>
+  </Style>
+  <Style Selector="Border.sync-badge.conflict TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource TertiaryBrush}"/>
+  </Style>
+
   <!-- ===== Punto verde que "late" (estado activo) ===== -->
   <Style Selector="Ellipse.pulse">
     <Style.Animations>

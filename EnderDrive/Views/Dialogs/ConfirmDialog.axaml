@@ -19,6 +19,9 @@
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
                 <Button Classes="secondary" Content="{Binding CancelText}" Click="Cancel_Click"
                         IsCancel="True"/>
+                <!-- Tercera opción (solo si AlternativeText tiene texto) -->
+                <Button Classes="secondary" Content="{Binding AlternativeText}" Click="Alternative_Click"
+                        IsVisible="{Binding HasAlternative}"/>
                 <!-- Clase "danger" si la acción es destructiva, "primary" si no -->
                 <Button Classes="primary"
                         Classes.danger="{Binding IsDestructive}"

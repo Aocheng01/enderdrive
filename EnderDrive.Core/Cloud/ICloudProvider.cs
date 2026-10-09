@@ -50,6 +50,13 @@ public interface ICloudProvider
 
     /// <summary>Quita una copia de la nube (a la papelera, si la nube la tiene).</summary>
     Task DeleteBackupAsync(CloudBackup backup, CancellationToken cancellationToken = default);
+
+    /// <summary>Descarga una copia de la nube al archivo indicado.</summary>
+    Task DownloadBackupAsync(
+        CloudBackup backup,
+        string destinationFile,
+        IProgress<OperationProgress>? progress = null,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>Una copia de seguridad guardada en la nube.</summary>
