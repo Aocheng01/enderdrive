@@ -16,9 +16,6 @@ namespace EnderDrive.ViewModels
     /// </summary>
     public sealed partial class WorldItemViewModel : ObservableObject
     {
-        private static readonly string[] ShortMonths =
-            ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-
         private readonly IFolderLauncher _folderLauncher;
         private readonly IClipboardService _clipboard;
 
@@ -64,8 +61,8 @@ namespace EnderDrive.ViewModels
             GameVersion = world.GameVersion;
             Loader = FormatLoader(world.Loader);
 
-            LastPlayedText = FormatLastPlayed(world.LastPlayed, DateTime.Now);
-            SizeText = FormatSize(world.SizeBytes);
+            LastPlayedText = Formatters.RelativeDate(world.LastPlayed);
+            SizeText = Formatters.Size(world.SizeBytes);
             SeedText = world.Seed?.ToString(CultureInfo.InvariantCulture);
             VersionBadgeText = world.GameVersion is null ? null : $"v{world.GameVersion}";
             GameModeText = FormatGameMode(world.GameMode);
@@ -96,36 +93,6 @@ namespace EnderDrive.ViewModels
 
         [RelayCommand]
         private Task CopyPathAsync() => _clipboard.SetTextAsync(FolderPath);
-
-        /// <summary>"1.42 GB", "840 MB"… Con punto decimal siempre, como en el diseño.</summary>
-        internal static string FormatSize(long bytes) => bytes switch
-        {
-            >= 1L << 30 => string.Create(CultureInfo.InvariantCulture, $"{bytes / (double)(1L << 30):0.00} GB"),
-            >= 1L << 20 => string.Create(CultureInfo.InvariantCulture, $"{bytes / (double)(1L << 20):0} MB"),
-            _ => string.Create(CultureInfo.InvariantCulture, $"{bytes / 1024.0:0} KB"),
-        };
-
-        /// <summary>"Hoy, 18:30 (Hace 2h)", "Ayer, 22:15", "Hace 3 días" o "12 Ene 2025".</summary>
-        private static string FormatLastPlayed(DateTime date, DateTime now)
-        {
-            var ago = now - date;
-
-            if (date.Date == now.Date)
-            {
-                var relative = ago.TotalMinutes < 1 ? "ahora mismo"
-                    : ago.TotalHours < 1 ? $"Hace {(int)ago.TotalMinutes} min"
-                    : $"Hace {(int)ago.TotalHours}h";
-                return $"Hoy, {date:HH:mm} ({relative})";
-            }
-
-            if (date.Date == now.Date.AddDays(-1))
-                return $"Ayer, {date:HH:mm}";
-
-            if (ago.TotalDays < 7)
-                return $"Hace {(int)Math.Ceiling(ago.TotalDays)} días";
-
-            return $"{date.Day} {ShortMonths[date.Month - 1]} {date.Year}";
-        }
 
         private static string? FormatLoader(string? brand) => brand?.ToLowerInvariant() switch
         {

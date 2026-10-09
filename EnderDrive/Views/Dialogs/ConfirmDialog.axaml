@@ -1,0 +1,45 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dialogs="using:EnderDrive.Views.Dialogs"
+        x:Class="EnderDrive.Views.Dialogs.ConfirmDialog"
+        x:DataType="dialogs:ConfirmOptions"
+        Title="{Binding Title}"
+        Width="440" SizeToContent="Height"
+        CanResize="False" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        WindowDecorations="BorderOnly"
+        Background="{StaticResource SurfaceLowBrush}">
+
+    <!-- Sin barra de título (BorderOnly): el diálogo dibuja su propia cabecera -->
+    <DockPanel>
+
+        <!-- Botones (abajo) -->
+        <Border DockPanel.Dock="Bottom" Padding="16,12"
+                Background="{StaticResource SurfaceLowestBrush}">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                <Button Classes="secondary" Content="{Binding CancelText}" Click="Cancel_Click"
+                        IsCancel="True"/>
+                <!-- Clase "danger" si la acción es destructiva, "primary" si no -->
+                <Button Classes="primary"
+                        Classes.danger="{Binding IsDestructive}"
+                        Content="{Binding ConfirmText}" Click="Confirm_Click"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Icono + textos -->
+        <Grid Margin="20" ColumnDefinitions="Auto,*">
+            <Border Width="40" Height="40" VerticalAlignment="Top"
+                    Background="{StaticResource SurfaceBrush}"
+                    CornerRadius="{StaticResource RadiusXl}">
+                <TextBlock Classes="icon" FontSize="22" HorizontalAlignment="Center"
+                           Foreground="{StaticResource SecondaryBrush}" Text="{Binding Icon}"/>
+            </Border>
+            <StackPanel Grid.Column="1" Margin="16,0,0,0" Spacing="8">
+                <TextBlock Classes="headline-md" TextWrapping="Wrap"
+                           Foreground="{StaticResource OnSurfaceBrush}" Text="{Binding Title}"/>
+                <TextBlock Classes="body-md" TextWrapping="Wrap" LineHeight="20"
+                           Foreground="{StaticResource OnSurfaceVariantBrush}" Text="{Binding Message}"/>
+            </StackPanel>
+        </Grid>
+    </DockPanel>
+</Window>

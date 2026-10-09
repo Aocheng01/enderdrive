@@ -1,8 +1,218 @@
-    <UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="EnderDrive.Views.Pages.BackupsView">
-  Welcome to Avalonia!
+             xmlns:vm="using:EnderDrive.ViewModels.Pages"
+             xmlns:items="using:EnderDrive.ViewModels"
+             x:Class="EnderDrive.Views.Pages.BackupsView"
+             x:DataType="vm:BackupsViewModel">
+
+    <!-- Mismo esquema que Mis Mundos: barra superior, resumen, lista y barra inferior -->
+    <DockPanel>
+
+        <!-- ===== 1. BARRA SUPERIOR ===== -->
+        <Border DockPanel.Dock="Top" Margin="0,0,0,12" Padding="8"
+                Background="{StaticResource SurfaceLowBrush}"
+                CornerRadius="{StaticResource RadiusXl}"
+                BoxShadow="0 1 2 0 #40000000">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Border Width="32" Height="32" VerticalAlignment="Center"
+                        Background="{StaticResource SurfaceBrush}"
+                        CornerRadius="{StaticResource RadiusLg}">
+                    <TextBlock Classes="icon" HorizontalAlignment="Center"
+                               Foreground="{StaticResource PrimaryBrush}" Text="archive"/>
+                </Border>
+
+                <StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
+                    <TextBlock Classes="label-mono-sm" Foreground="{StaticResource OutlineBrush}"
+                               Text="EnderDrive  /  Backups Vault"/>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Classes="headline-md" Foreground="{StaticResource OnSurfaceBrush}"
+                                   Text="{Binding Title}"/>
+                        <Border Classes="chip" Background="{StaticResource SurfaceHighestBrush}"
+                                ToolTip.Tip="{Binding BackupsPath}">
+                            <TextBlock Text="{Binding BackupsPathShort}"/>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <ComboBox Classes="toolbar" MinWidth="160"
+                              ItemsSource="{Binding WorldFilters}"
+                              SelectedItem="{Binding SelectedWorldFilter}">
+                        <ComboBox.SelectionBoxItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Classes="icon" FontSize="15"
+                                               Foreground="{StaticResource OutlineBrush}" Text="public"/>
+                                    <TextBlock VerticalAlignment="Center" Text="{Binding}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.SelectionBoxItemTemplate>
+                    </ComboBox>
+                    <Button Classes="toolbar" Command="{Binding OpenBackupsFolderCommand}"
+                            ToolTip.Tip="Abrir la carpeta de copias">
+                        <TextBlock Classes="icon" FontSize="16" Text="folder_open"/>
+                    </Button>
+                    <Button Classes="toolbar" Command="{Binding RefreshCommand}"
+                            ToolTip.Tip="Actualizar">
+                        <TextBlock Classes="icon" FontSize="16" Text="refresh"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ===== 2. RESUMEN ===== -->
+        <Border DockPanel.Dock="Top" Margin="0,0,0,12" Padding="8"
+                Background="{StaticResource SurfaceLowBrush}"
+                CornerRadius="{StaticResource RadiusXl}"
+                BoxShadow="0 1 2 0 #40000000">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Ellipse Classes="pulse" Width="10" Height="10" VerticalAlignment="Center"
+                             Fill="{StaticResource PrimaryBrush}"/>
+                    <TextBlock Classes="title-sm" VerticalAlignment="Center"
+                               Foreground="{StaticResource OnSurfaceBrush}" Text="{Binding StatusText}"/>
+                    <TextBlock Classes="label-mono-sm" VerticalAlignment="Center"
+                               Foreground="{StaticResource OutlineVariantBrush}" Text="/"/>
+                    <TextBlock Classes="label-mono-md" VerticalAlignment="Center"
+                               Foreground="{StaticResource PrimaryBrush}" Text="{Binding TotalSizeText}"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <TextBlock Classes="icon" FontSize="16"
+                               Foreground="{StaticResource PrimaryBrush}" Text="inventory_2"/>
+                    <TextBlock Classes="body-sm" VerticalAlignment="Center"
+                               Foreground="{StaticResource OutlineBrush}" Text="{Binding RetentionText}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ===== 4. BARRA INFERIOR: copia seleccionada + acciones ===== -->
+        <Border DockPanel.Dock="Bottom" Margin="0,8,0,0" Padding="8"
+                Background="{StaticResource SurfaceLowestBrush}"
+                CornerRadius="{StaticResource RadiusXl}"
+                BoxShadow="0 8 16 0 #80000000">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Border Width="24" Height="24" Background="{StaticResource SurfaceBrush}"
+                            CornerRadius="{StaticResource RadiusLg}">
+                        <TextBlock Classes="icon" FontSize="15" HorizontalAlignment="Center"
+                                   Foreground="{StaticResource PrimaryBrush}" Text="check_box"/>
+                    </Border>
+                    <TextBlock Classes="body-md" VerticalAlignment="Center"
+                               Foreground="{StaticResource OnSurfaceVariantBrush}" Text="Copia seleccionada:"/>
+                    <TextBlock Classes="title-sm" VerticalAlignment="Center" MaxWidth="300"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="{StaticResource PrimaryBrush}"
+                               Text="{Binding SelectedBackup.SelectionText, FallbackValue='Ninguna'}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                    <Button Classes="subtle" IsEnabled="{Binding HasSelection}"
+                            Command="{Binding RevealSelectedCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Classes="icon" FontSize="16"
+                                       Foreground="{StaticResource OutlineBrush}" Text="folder"/>
+                            <TextBlock VerticalAlignment="Center" Text="Mostrar archivo"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="subtle" IsEnabled="{Binding HasSelection}"
+                            Command="{Binding DeleteSelectedCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Classes="icon" FontSize="16"
+                                       Foreground="{StaticResource TertiaryBrush}" Text="delete"/>
+                            <TextBlock VerticalAlignment="Center" Text="Eliminar"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="emerald" IsEnabled="{Binding HasSelection}"
+                            Command="{Binding RestoreSelectedCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Classes="icon" FontSize="17" Text="history"/>
+                            <TextBlock VerticalAlignment="Center" Text="Restaurar esta copia"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ===== 3. CONTENIDO ===== -->
+        <Panel>
+            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}"
+                         VerticalAlignment="Top" Height="4"
+                         Foreground="{StaticResource PrimaryBrush}"/>
+
+            <StackPanel IsVisible="{Binding IsEmpty}" Spacing="8"
+                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Classes="icon" FontSize="48" HorizontalAlignment="Center"
+                           Foreground="{StaticResource OutlineBrush}" Text="inventory_2"/>
+                <TextBlock Classes="title-lg" HorizontalAlignment="Center"
+                           Foreground="{StaticResource OnSurfaceBrush}"
+                           Text="Aún no hay copias de seguridad"/>
+                <TextBlock Classes="body-md" HorizontalAlignment="Center"
+                           Foreground="{StaticResource OnSurfaceVariantBrush}"
+                           Text="Ve a Mis Mundos, selecciona un mundo y pulsa «Crear copia»."/>
+            </StackPanel>
+
+            <!-- Reutiliza los estilos de tarjeta de Mis Mundos (world-list, world-card, world-stripe) -->
+            <ListBox Classes="world-list" ItemsSource="{Binding Backups}"
+                     SelectedItem="{Binding SelectedBackup}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="items:BackupItemViewModel">
+                        <Border Classes="world-card">
+                            <Panel>
+                                <Border Classes="world-stripe" Width="4" Margin="0,8"
+                                        HorizontalAlignment="Left" CornerRadius="0,2,2,0"
+                                        Background="{StaticResource PrimaryBrush}"/>
+
+                                <Grid Margin="16,8,12,8" ColumnDefinitions="Auto,*,Auto">
+
+                                    <!-- Icono: zip normal o copia automática -->
+                                    <Border Width="48" Height="48"
+                                            Background="{StaticResource SurfaceLowestBrush}"
+                                            CornerRadius="{StaticResource RadiusLg}">
+                                        <TextBlock Classes="icon" FontSize="24" HorizontalAlignment="Center"
+                                                   Foreground="{StaticResource PrimaryBrush}"
+                                                   Text="{Binding Icon}"/>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="1" Margin="12,0" Spacing="4"
+                                                VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Classes="title-lg" MaxWidth="360"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Foreground="{StaticResource OnSurfaceBrush}"
+                                                       Text="{Binding WorldName}"/>
+                                            <Border Classes="chip" Classes.plugin="{Binding IsAutomatic}">
+                                                <TextBlock Text="{Binding ReasonText}"/>
+                                            </Border>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Spacing="12">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <TextBlock Classes="icon" FontSize="14"
+                                                           Foreground="{StaticResource OutlineBrush}" Text="history"/>
+                                                <TextBlock Classes="body-sm" VerticalAlignment="Center"
+                                                           Foreground="{StaticResource OnSurfaceVariantBrush}"
+                                                           ToolTip.Tip="{Binding FullDateText}"
+                                                           Text="{Binding DateText}"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <TextBlock Classes="icon" FontSize="14"
+                                                           Foreground="{StaticResource OutlineBrush}" Text="hard_drive"/>
+                                                <TextBlock Classes="body-sm" VerticalAlignment="Center"
+                                                           Foreground="{StaticResource OnSurfaceVariantBrush}"
+                                                           Text="{Binding SizeText}"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!-- Nombre del archivo, a la derecha -->
+                                    <TextBlock Grid.Column="2" Classes="label-mono-sm" VerticalAlignment="Center"
+                                               Foreground="{StaticResource OutlineBrush}"
+                                               Text="{Binding FileName}"/>
+                                </Grid>
+                            </Panel>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Panel>
+    </DockPanel>
 </UserControl>

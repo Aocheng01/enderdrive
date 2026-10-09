@@ -25,6 +25,10 @@ public partial class MyWorldsViewModel : ViewModelBase
     private readonly IFolderLauncher _folderLauncher;
     private readonly IClipboardService _clipboard;
     private readonly ISettingsService _settings;
+    private readonly IBackupService _backupService;
+    private readonly INavigationService _navigation;
+    private readonly BackupsViewModel _backupsPage;
+    private readonly ToastViewModel _toast;
 
     // Todos los mundos encontrados. "Worlds" es lo que se ve tras buscar/filtrar/ordenar.
     private List<WorldItemViewModel> _allWorlds = [];
@@ -83,28 +87,28 @@ public partial class MyWorldsViewModel : ViewModelBase
     public bool IsCustomPath => !string.Equals(SavesPath, _scanner.DefaultSavesPath, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>".minecraft/saves" o las dos últimas carpetas de la ruta elegida.</summary>
-    public string SavesPathShort
-    {
-        get
-        {
-            var parts = SavesPath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar,
-                StringSplitOptions.RemoveEmptyEntries);
-            return parts.Length >= 2 ? $"{parts[^2]}/{parts[^1]}" : SavesPath;
-        }
-    }
+    public string SavesPathShort => Formatters.ShortPath(SavesPath);
 
     public MyWorldsViewModel(
         IWorldScanner scanner,
         IFolderPicker folderPicker,
         IFolderLauncher folderLauncher,
         IClipboardService clipboard,
-        ISettingsService settings)
+        ISettingsService settings,
+        IBackupService backupService,
+        INavigationService navigation,
+        BackupsViewModel backupsPage,
+        ToastViewModel toast)
     {
         _scanner = scanner;
         _folderPicker = folderPicker;
         _folderLauncher = folderLauncher;
         _clipboard = clipboard;
         _settings = settings;
+        _backupService = backupService;
+        _navigation = navigation;
+        _backupsPage = backupsPage;
+        _toast = toast;
 
         // Si el usuario eligió una carpeta en otra sesión, la recuperamos
         SavesPath = _settings.Current.SavesPath ?? _scanner.DefaultSavesPath;
@@ -114,10 +118,13 @@ public partial class MyWorldsViewModel : ViewModelBase
         StatusText = "";
         TotalSizeText = "";
         LastScanText = "";
-
-        // Primer escaneo al arrancar (el constructor no puede ser async)
-        _ = RefreshAsync();
     }
+
+    /// <summary>
+    /// Escaneamos cada vez que se entra en la página (también la primera, al arrancar):
+    /// así se ven los cambios hechos desde otras páginas, como restaurar una copia.
+    /// </summary>
+    public override void OnNavigatedTo() => _ = RefreshAsync();
 
     // Cada vez que cambia la búsqueda, el filtro o el orden, recalculamos la lista visible
     partial void OnSearchTextChanged(string value) => ApplyFilter();
@@ -142,6 +149,36 @@ public partial class MyWorldsViewModel : ViewModelBase
         SavesPath = _scanner.DefaultSavesPath;
         SaveSavesPath(null);
         await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private async Task CreateBackupAsync()
+    {
+        if (SelectedWorld is not { } world)
+            return;
+
+        // El aviso de abajo a la derecha muestra el progreso mientras se comprime
+        var progress = _toast.Start("Creando copia de seguridad", world.Name);
+        try
+        {
+            var backup = await _backupService.CreateBackupAsync(world.FolderPath, progress: progress);
+            _toast.Succeed($"Copia guardada ({Formatters.Size(backup.SizeBytes)})");
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // Incluye WorldInUseException: el mundo está abierto en Minecraft
+            _toast.Fail(e.Message);
+        }
+    }
+
+    [RelayCommand]
+    private void ShowBackups()
+    {
+        // Llevamos al usuario a Copias de Seguridad, ya filtrado por este mundo
+        if (SelectedWorld is { } world)
+            _backupsPage.ShowWorld(world.FolderName);
+
+        _navigation.NavigateTo(_backupsPage);
     }
 
     [RelayCommand]
@@ -214,7 +251,7 @@ public partial class MyWorldsViewModel : ViewModelBase
 
     private void UpdateSummary()
     {
-        TotalSizeText = $"{WorldItemViewModel.FormatSize(_allWorlds.Sum(w => w.SizeBytes))} ocupados";
+        TotalSizeText = $"{Formatters.Size(_allWorlds.Sum(w => w.SizeBytes))} ocupados";
 
         StatusText = IsLoading ? "Buscando mundos…"
             : _scanError ?? (Worlds.Count == _allWorlds.Count

@@ -178,31 +178,42 @@
                     </Border>
                     <TextBlock Classes="body-md" VerticalAlignment="Center"
                                Foreground="{StaticResource OnSurfaceVariantBrush}" Text="Mundo seleccionado:"/>
-                    <TextBlock Classes="title-sm" VerticalAlignment="Center"
+                    <TextBlock Classes="title-sm" VerticalAlignment="Center" MaxWidth="260"
+                               TextTrimming="CharacterEllipsis"
                                Foreground="{StaticResource PrimaryBrush}"
                                Text="{Binding SelectedWorld.SelectionText, FallbackValue='Ninguno'}"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
                     <Button Classes="subtle" IsEnabled="{Binding HasSelection}"
+                            ToolTip.Tip="Abrir la carpeta del mundo en el Explorador"
                             Command="{Binding SelectedWorld.OpenFolderCommand, FallbackValue={x:Null}}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Classes="icon" FontSize="16"
                                        Foreground="{StaticResource OutlineBrush}" Text="folder"/>
-                            <TextBlock VerticalAlignment="Center" Text="Abrir en el Explorador"/>
+                            <TextBlock VerticalAlignment="Center" Text="Abrir carpeta"/>
                         </StackPanel>
                     </Button>
-                    <!-- Fase 4 (copias de seguridad) -->
-                    <Button Classes="secondary" FontSize="12" IsEnabled="False"
-                            ToolTip.ShowOnDisabled="True" ToolTip.Tip="Disponible con las copias de seguridad">
+                    <Button Classes="secondary" FontSize="12" IsEnabled="{Binding HasSelection}"
+                            Command="{Binding CreateBackupCommand}"
+                            ToolTip.Tip="Guardar una copia de seguridad (.zip) del mundo">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Classes="icon" FontSize="16"
+                                       Foreground="{StaticResource PrimaryBrush}" Text="backup"/>
+                            <TextBlock VerticalAlignment="Center" Text="Crear copia"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="secondary" FontSize="12" IsEnabled="{Binding HasSelection}"
+                            Command="{Binding ShowBackupsCommand}"
+                            ToolTip.Tip="Ver las copias de este mundo y restaurar una">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Classes="icon" FontSize="16"
                                        Foreground="{StaticResource SecondaryBrush}" Text="history"/>
-                            <TextBlock VerticalAlignment="Center" Text="Restaurar versión anterior"/>
+                            <TextBlock VerticalAlignment="Center" Text="Restaurar versión"/>
                         </StackPanel>
                     </Button>
                     <!-- Fase 3 (sincronización con la nube) -->
-                    <Button Classes="accent" IsEnabled="False"
+                    <Button Classes="emerald" IsEnabled="False"
                             ToolTip.ShowOnDisabled="True" ToolTip.Tip="Disponible con la sincronización en la nube">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Classes="icon" FontSize="17" Text="sync"/>

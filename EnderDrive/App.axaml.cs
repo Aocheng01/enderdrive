@@ -42,13 +42,17 @@ public partial class App : Application
         // Servicios del Core
         services.AddSingleton<IWorldScanner, WorldScanner>();
         services.AddSingleton<ISettingsService, JsonSettingsService>();
+        services.AddSingleton<IBackupService, BackupService>();
 
         // Servicios de la app (necesitan la ventana de Avalonia)
         services.AddSingleton<IFolderPicker, FolderPicker>();
         services.AddSingleton<IFolderLauncher, FolderLauncher>();
         services.AddSingleton<IClipboardService, ClipboardService>();
+        services.AddSingleton<IDialogService, DialogService>();
+        services.AddSingleton<INavigationService, NavigationService>();
 
         // ViewModels
+        services.AddSingleton<ToastViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MyWorldsViewModel>();
         services.AddSingleton<CloudSyncViewModel>();

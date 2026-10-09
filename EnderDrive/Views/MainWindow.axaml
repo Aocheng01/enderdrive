@@ -1,4 +1,4 @@
-﻿<Window xmlns="https://github.com/avaloniaui"
+<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:EnderDrive.ViewModels"
         x:Class="EnderDrive.Views.MainWindow"
@@ -104,5 +104,49 @@
         <!-- ===== CONTENIDO (página actual) ===== -->
         <ContentControl Grid.Row="1" Grid.Column="1" Margin="20"
                         Content="{Binding CurrentPage}"/>
+
+        <!-- ===== AVISO FLOTANTE (copias, restauraciones…) =====
+             Está en la ventana y no en una página para que siga visible al cambiar de página -->
+        <Border Grid.Row="1" Grid.Column="1" Width="360" Margin="0,0,28,84" Padding="10"
+                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                IsVisible="{Binding Toast.IsOpen}"
+                Background="#F22A2A2C" CornerRadius="{StaticResource RadiusXl}"
+                BoxShadow="0 16 36 0 #B3000000">
+            <StackPanel Spacing="6">
+                <!-- Cabecera: icono, título y cerrar -->
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Border Width="22" Height="22" CornerRadius="{StaticResource RadiusLg}"
+                            Background="{StaticResource PrimarySoftBrush}">
+                        <!-- El color lo ponen los estilos .toast-icon / .error (un Foreground aquí los anularía) -->
+                        <TextBlock Classes="icon toast-icon" FontSize="14" HorizontalAlignment="Center"
+                                   Classes.spin="{Binding Toast.IsRunning}"
+                                   Classes.error="{Binding Toast.IsError}"
+                                   Text="{Binding Toast.Icon}"/>
+                    </Border>
+                    <TextBlock Grid.Column="1" Classes="title-sm" Margin="8,0" VerticalAlignment="Center"
+                               Foreground="{StaticResource OnSurfaceBrush}" Text="{Binding Toast.Title}"/>
+                    <Button Grid.Column="2" Classes="inline" Width="20" Height="20"
+                            Command="{Binding Toast.CloseCommand}" ToolTip.Tip="Cerrar">
+                        <TextBlock Classes="icon" FontSize="14" Text="close"/>
+                    </Button>
+                </Grid>
+
+                <TextBlock Classes="body-sm" FontWeight="Medium" TextTrimming="CharacterEllipsis"
+                           Foreground="{StaticResource OnSurfaceBrush}" Text="{Binding Toast.Subject}"/>
+
+                <ProgressBar Classes="xp" Maximum="100" Value="{Binding Toast.Progress}"
+                             Foreground="{StaticResource PrimaryContainerBrush}"
+                             IsVisible="{Binding !Toast.IsError}"/>
+
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Classes="label-mono-sm toast-stage" TextWrapping="Wrap"
+                               Classes.error="{Binding Toast.IsError}"
+                               Text="{Binding Toast.StageText}"/>
+                    <TextBlock Grid.Column="1" Classes="label-mono-sm" Margin="8,0,0,0"
+                               Foreground="{StaticResource OnSurfaceVariantBrush}"
+                               Text="{Binding Toast.ProgressText}"/>
+                </Grid>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>

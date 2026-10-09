@@ -81,19 +81,24 @@
   </Style>
 
   <!-- ===== Botones extra del diseño de Mis Mundos ===== -->
-  <!-- Verde intenso con brillo ("Sincronizar ahora") -->
-  <Style Selector="Button.accent">
+  <!-- Verde intenso con brillo ("Sincronizar ahora", "Restaurar esta copia").
+       Ojo: no se puede llamar "accent", Fluent ya tiene una clase con ese nombre y la pinta de azul -->
+  <Style Selector="Button.emerald">
     <Setter Property="Background" Value="{StaticResource PrimaryContainerBrush}"/>
     <Setter Property="Foreground" Value="{StaticResource OnPrimaryContainerBrush}"/>
     <Setter Property="FontWeight" Value="Bold"/>
     <Setter Property="Padding" Value="16,0"/>
   </Style>
   <!-- Button no tiene BoxShadow: el brillo se pone en el ContentPresenter de su plantilla -->
-  <Style Selector="Button.accent /template/ ContentPresenter#PART_ContentPresenter">
+  <Style Selector="Button.emerald /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="BoxShadow" Value="0 0 14 0 #5910B981"/>
   </Style>
-  <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+  <Style Selector="Button.emerald:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="#2ECC94"/>
+    <Setter Property="Foreground" Value="{StaticResource OnPrimaryContainerBrush}"/>
+  </Style>
+  <Style Selector="Button.emerald:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource PrimaryContainerBrush}"/>
     <Setter Property="Foreground" Value="{StaticResource OnPrimaryContainerBrush}"/>
   </Style>
   <!-- Discreto ("Abrir en el Explorador") -->
@@ -137,6 +142,42 @@
     <Setter Property="RenderTransform" Value="none"/>
   </Style>
 
+  <!-- Rojo para acciones destructivas ("Eliminar") -->
+  <Style Selector="Button.danger">
+    <Setter Property="Background" Value="{StaticResource ErrorContainerBrush}"/>
+    <Setter Property="Foreground" Value="#FFDAD6"/>
+  </Style>
+  <Style Selector="Button.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#B3261E"/>
+    <Setter Property="Foreground" Value="#FFDAD6"/>
+  </Style>
+
+  <!-- Icono que gira (operación en curso) -->
+  <Style Selector="TextBlock.spin">
+    <Setter Property="RenderTransform" Value="rotate(0deg)"/>
+    <Style.Animations>
+      <Animation Duration="0:0:1.2" IterationCount="Infinite">
+        <KeyFrame Cue="0%">
+          <Setter Property="RotateTransform.Angle" Value="0"/>
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="RotateTransform.Angle" Value="360"/>
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <!-- Colores del aviso flotante: verde normalmente, rojo si hubo un error -->
+  <Style Selector="TextBlock.toast-icon">
+    <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+  </Style>
+  <Style Selector="TextBlock.toast-stage">
+    <Setter Property="Foreground" Value="{StaticResource OnSurfaceVariantBrush}"/>
+  </Style>
+  <Style Selector="TextBlock.toast-icon.error, TextBlock.toast-stage.error">
+    <Setter Property="Foreground" Value="{StaticResource TertiaryBrush}"/>
+  </Style>
+
   <!-- Botones desactivados (funciones de fases futuras): mismo color, más apagados.
        Fluent pinta el fondo gris en el ContentPresenter, así que lo dejamos transparente
        para que se vea el Background del propio botón. -->
@@ -147,7 +188,7 @@
     <Setter Property="Background" Value="{StaticResource SurfaceHighestBrush}"/>
     <Setter Property="Foreground" Value="{StaticResource OnSurfaceBrush}"/>
   </Style>
-  <Style Selector="Button.accent:disabled /template/ ContentPresenter#PART_ContentPresenter">
+  <Style Selector="Button.emerald:disabled /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{StaticResource PrimaryContainerBrush}"/>
     <Setter Property="Foreground" Value="{StaticResource OnPrimaryContainerBrush}"/>
   </Style>
